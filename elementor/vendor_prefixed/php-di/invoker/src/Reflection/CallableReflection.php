@@ -1,10 +1,10 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\Invoker\Reflection;
+namespace ElementorDeps\Invoker\Reflection;
 
 use Closure;
-use ElementorProDeps\Invoker\Exception\NotCallableException;
+use ElementorDeps\Invoker\Exception\NotCallableException;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionFunctionAbstract;

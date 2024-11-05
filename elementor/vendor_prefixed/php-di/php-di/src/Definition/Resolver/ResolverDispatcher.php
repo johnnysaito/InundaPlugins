@@ -1,19 +1,19 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Resolver;
+namespace ElementorDeps\DI\Definition\Resolver;
 
-use ElementorProDeps\DI\Definition\ArrayDefinition;
-use ElementorProDeps\DI\Definition\DecoratorDefinition;
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\EnvironmentVariableDefinition;
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\FactoryDefinition;
-use ElementorProDeps\DI\Definition\InstanceDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
-use ElementorProDeps\DI\Definition\SelfResolvingDefinition;
-use ElementorProDeps\DI\Proxy\ProxyFactory;
-use ElementorProDeps\Psr\Container\ContainerInterface;
+use ElementorDeps\DI\Definition\ArrayDefinition;
+use ElementorDeps\DI\Definition\DecoratorDefinition;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\EnvironmentVariableDefinition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\FactoryDefinition;
+use ElementorDeps\DI\Definition\InstanceDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\SelfResolvingDefinition;
+use ElementorDeps\DI\Proxy\ProxyFactory;
+use ElementorDeps\Psr\Container\ContainerInterface;
 /**
  * Dispatches to more specific resolvers.
  *

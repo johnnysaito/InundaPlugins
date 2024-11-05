@@ -1,10 +1,10 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Source;
+namespace ElementorDeps\DI\Definition\Source;
 
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition;
 /**
  * Source of definitions for entries of the container.
  *

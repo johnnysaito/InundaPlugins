@@ -1,17 +1,17 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI;
+namespace ElementorDeps\DI;
 
-use ElementorProDeps\DI\Definition\ArrayDefinitionExtension;
-use ElementorProDeps\DI\Definition\EnvironmentVariableDefinition;
-use ElementorProDeps\DI\Definition\Helper\AutowireDefinitionHelper;
-use ElementorProDeps\DI\Definition\Helper\CreateDefinitionHelper;
-use ElementorProDeps\DI\Definition\Helper\FactoryDefinitionHelper;
-use ElementorProDeps\DI\Definition\Reference;
-use ElementorProDeps\DI\Definition\StringDefinition;
-use ElementorProDeps\DI\Definition\ValueDefinition;
-if (!\function_exists('ElementorProDeps\\DI\\value')) {
+use ElementorDeps\DI\Definition\ArrayDefinitionExtension;
+use ElementorDeps\DI\Definition\EnvironmentVariableDefinition;
+use ElementorDeps\DI\Definition\Helper\AutowireDefinitionHelper;
+use ElementorDeps\DI\Definition\Helper\CreateDefinitionHelper;
+use ElementorDeps\DI\Definition\Helper\FactoryDefinitionHelper;
+use ElementorDeps\DI\Definition\Reference;
+use ElementorDeps\DI\Definition\StringDefinition;
+use ElementorDeps\DI\Definition\ValueDefinition;
+if (!\function_exists('ElementorDeps\\DI\\value')) {
     /**
      * Helper for defining a value.
      *
@@ -22,7 +22,7 @@ if (!\function_exists('ElementorProDeps\\DI\\value')) {
         return new ValueDefinition($value);
     }
 }
-if (!\function_exists('ElementorProDeps\\DI\\create')) {
+if (!\function_exists('ElementorDeps\\DI\\create')) {
     /**
      * Helper for defining an object.
      *
@@ -34,7 +34,7 @@ if (!\function_exists('ElementorProDeps\\DI\\create')) {
         return new CreateDefinitionHelper($className);
     }
 }
-if (!\function_exists('ElementorProDeps\\DI\\autowire')) {
+if (!\function_exists('ElementorDeps\\DI\\autowire')) {
     /**
      * Helper for autowiring an object.
      *
@@ -46,7 +46,7 @@ if (!\function_exists('ElementorProDeps\\DI\\autowire')) {
         return new AutowireDefinitionHelper($className);
     }
 }
-if (!\function_exists('ElementorProDeps\\DI\\factory')) {
+if (!\function_exists('ElementorDeps\\DI\\factory')) {
     /**
      * Helper for defining a container entry using a factory function/callable.
      *
@@ -58,7 +58,7 @@ if (!\function_exists('ElementorProDeps\\DI\\factory')) {
         return new FactoryDefinitionHelper($factory);
     }
 }
-if (!\function_exists('ElementorProDeps\\DI\\decorate')) {
+if (!\function_exists('ElementorDeps\\DI\\decorate')) {
     /**
      * Decorate the previous definition using a callable.
      *
@@ -76,7 +76,7 @@ if (!\function_exists('ElementorProDeps\\DI\\decorate')) {
         return new FactoryDefinitionHelper($callable, \true);
     }
 }
-if (!\function_exists('ElementorProDeps\\DI\\get')) {
+if (!\function_exists('ElementorDeps\\DI\\get')) {
     /**
      * Helper for referencing another container entry in an object definition.
      */
@@ -85,7 +85,7 @@ if (!\function_exists('ElementorProDeps\\DI\\get')) {
         return new Reference($entryName);
     }
 }
-if (!\function_exists('ElementorProDeps\\DI\\env')) {
+if (!\function_exists('ElementorDeps\\DI\\env')) {
     /**
      * Helper for referencing environment variables.
      *
@@ -99,7 +99,7 @@ if (!\function_exists('ElementorProDeps\\DI\\env')) {
         return new EnvironmentVariableDefinition($variableName, $isOptional, $defaultValue);
     }
 }
-if (!\function_exists('ElementorProDeps\\DI\\add')) {
+if (!\function_exists('ElementorDeps\\DI\\add')) {
     /**
      * Helper for extending another definition.
      *
@@ -125,7 +125,7 @@ if (!\function_exists('ElementorProDeps\\DI\\add')) {
         return new ArrayDefinitionExtension($values);
     }
 }
-if (!\function_exists('ElementorProDeps\\DI\\string')) {
+if (!\function_exists('ElementorDeps\\DI\\string')) {
     /**
      * Helper for concatenating strings.
      *

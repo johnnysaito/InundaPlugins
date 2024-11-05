@@ -1,11 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition;
+namespace ElementorDeps\DI\Definition;
 
-use ElementorProDeps\DI\DependencyException;
-use ElementorProDeps\Psr\Container\ContainerInterface;
-use ElementorProDeps\Psr\Container\NotFoundExceptionInterface;
+use ElementorDeps\DI\DependencyException;
+use ElementorDeps\Psr\Container\ContainerInterface;
+use ElementorDeps\Psr\Container\NotFoundExceptionInterface;
 /**
  * Definition of a string composed of other strings.
  *

@@ -1,10 +1,10 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Exception;
+namespace ElementorDeps\DI\Definition\Exception;
 
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\Psr\Container\ContainerExceptionInterface;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\Psr\Container\ContainerExceptionInterface;
 /**
  * Invalid DI definitions.
  *

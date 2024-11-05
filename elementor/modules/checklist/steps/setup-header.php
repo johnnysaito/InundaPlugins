@@ -1,24 +1,22 @@
 <?php
 
-namespace ElementorPro\Modules\Checklist\Steps;
+namespace Elementor\Modules\Checklist\Steps;
 
-use ElementorPro\License\API;
-use ElementorPro\Plugin;
+use Elementor\Core\Isolation\Wordpress_Adapter_Interface;
+use Elementor\Modules\Checklist\Module as Checklist_Module;
+use Elementor\Core\Utils\Promotions\Filtered_Promotions_Manager;
+use Elementor\Utils;
 
-if ( ! defined( 'ABSPATH' ) || ! class_exists( '\\Elementor\\Modules\\Checklist\\Steps\\Setup_Header' ) ) {
-	exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
 }
 
-class Setup_Header extends \Elementor\Modules\Checklist\Steps\Setup_Header {
-	const STEP_ID = 'setup_header_pro';
+class Setup_Header extends Step_Base {
+	const STEP_ID = 'setup_header';
 
-	public function __construct( $module, $wordpress_adapter = null, $kit_adapter = null ) {
-		$promotion_data = ! $this->does_license_support_header()
-			? [
-				'url' => 'http://go.elementor.com/app-website-checklist-header-article',
-				'text' => esc_html__( 'Upgrade Now', 'elementor-pro' ),
-				'icon' => 'default',
-			]
+	public function __construct( $module, $wordpress_adapter = null, $kit_adapter = null, $should_promote = true ) {
+		$promotion_data = $should_promote
+			? $this->render_promotion()
 			: null;
 
 		parent::__construct( $module, $wordpress_adapter, $kit_adapter, $promotion_data );
@@ -29,16 +27,78 @@ class Setup_Header extends \Elementor\Modules\Checklist\Steps\Setup_Header {
 	}
 
 	public function is_visible() : bool {
-		return true;
+		if ( Utils::has_pro() ) {
+			return false;
+		}
+
+		return parent::is_visible();
+	}
+
+	public function is_absolute_completed() : bool {
+		$args = [
+			'post_type' => 'elementor_library',
+			'meta_query' => [
+				'relation' => 'AND',
+				[
+					'key' => '_elementor_template_type',
+					'value' => 'header',
+					'compare' => '=',
+				],
+				[
+					'key' => '_elementor_conditions',
+				],
+			],
+			'posts_per_page' => 1,
+			'fields' => 'ids',
+			'no_found_rows' => true,
+			'update_post_term_cache' => false,
+			'update_post_meta_cache' => false,
+		];
+		$query = $this->wordpress_adapter->get_query( $args );
+		$header_templates = $query->posts ?? [];
+
+		return count( $header_templates ) >= 1;
+	}
+
+	public function get_title() : string {
+		return esc_html__( 'Set up a header', 'elementor' );
+	}
+
+	public function get_description() : string {
+		return esc_html__( 'This element applies across different pages, so visitors can easily navigate around your site.', 'elementor' );
+	}
+
+	public function get_cta_text() : string {
+		return esc_html__( 'Add a header', 'elementor' );
 	}
 
 	public function get_cta_url() : string {
-		$base_create_url = Plugin::elementor()->documents->get_create_new_post_url( 'elementor_library' );
-
-		return add_query_arg( [ 'template_type' => 'header' ], $base_create_url );
+		return '';
 	}
 
-	private function does_license_support_header() : bool {
-		return API::is_licence_has_feature( 'theme-builder' );
+	public function get_image_src() : string {
+		return 'https://assets.elementor.com/checklist/v1/images/checklist-step-4.jpg';
 	}
+
+	public function get_is_completion_immutable() : bool {
+		return false;
+	}
+
+	public function get_learn_more_url() : string {
+		return 'https://go.elementor.com/app-website-checklist-header-article';
+	}
+
+	private function render_promotion() {
+			return Filtered_Promotions_Manager::get_filtered_promotion_data(
+				[
+					'url' => 'https://go.elementor.com/go-pro-website-checklist-header',
+					'text' => esc_html__( 'Upgrade Now', 'elementor' ),
+					'icon' => 'default',
+				],
+				'elementor/checklist/promotion',
+				'upgrade_url'
+			);
+
+	}
+
 }

@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\PhpDocReader\PhpParser;
+namespace ElementorDeps\PhpDocReader\PhpParser;
 
 use SplFileObject;
 /**

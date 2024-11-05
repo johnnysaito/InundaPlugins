@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Source;
+namespace ElementorDeps\DI\Definition\Source;
 
 /**
  * Reads DI definitions from a file returning a PHP array.

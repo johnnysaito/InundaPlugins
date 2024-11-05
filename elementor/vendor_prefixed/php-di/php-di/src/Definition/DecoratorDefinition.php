@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition;
+namespace ElementorDeps\DI\Definition;
 
 /**
  * Factory that decorates a sub-definition.

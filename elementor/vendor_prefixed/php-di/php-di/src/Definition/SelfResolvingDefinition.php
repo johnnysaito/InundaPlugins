@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition;
+namespace ElementorDeps\DI\Definition;
 
-use ElementorProDeps\Psr\Container\ContainerInterface;
+use ElementorDeps\Psr\Container\ContainerInterface;
 /**
  * Describes a definition that can resolve itself.
  *

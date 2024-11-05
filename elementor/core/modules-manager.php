@@ -1,95 +1,61 @@
 <?php
-namespace ElementorPro\Core;
+namespace Elementor\Core;
 
-use ElementorPro\Plugin;
-use ElementorPro\Base\Module_Base;
+use Elementor\Core\Base\Module;
+use Elementor\Plugin;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
-final class Modules_Manager {
+/**
+ * Elementor modules manager.
+ *
+ * Elementor modules manager handler class is responsible for registering and
+ * managing Elementor modules.
+ *
+ * @since 1.6.0
+ */
+class Modules_Manager {
+
 	/**
-	 * @var Module_Base[]
+	 * Registered modules.
+	 *
+	 * Holds the list of all the registered modules.
+	 *
+	 * @since 1.6.0
+	 * @access public
+	 *
+	 * @var array
 	 */
 	private $modules = [];
 
+	/**
+	 * Modules manager constructor.
+	 *
+	 * Initializing the Elementor modules manager.
+	 *
+	 * @since 1.6.0
+	 * @access public
+	 */
 	public function __construct() {
-		$modules = [
-			'query-control',
-			'custom-attributes',
-			'custom-css',
-			'page-transitions',
-			// role-manager Must be before Global Widget
-			'role-manager',
-			'global-widget',
-			'assets-manager',
-			'popup',
-			'motion-fx',
-			'usage',
-			'screenshots',
-			'compatibility-tag',
-			'admin-top-bar',
-			'notes',
-			'announcements',
-			'display-conditions',
-			'element-manager',
-			'checklist',
+		$modules_namespace_prefix = $this->get_modules_namespace_prefix();
 
-			// Modules with Widgets.
-			'theme-builder',
-			'loop-builder',
-			'off-canvas',
-			'posts',
-			'gallery',
-			'forms',
-			'slides',
-			'nav-menu',
-			'animated-headline',
-			'hotspot',
-			'pricing',
-			'flip-box',
-			'call-to-action',
-			'carousel',
-			'table-of-contents',
-			'countdown',
-			'share-buttons',
-			'theme-elements',
-			'blockquote',
-			'custom-code',
-			'woocommerce',
-			'social',
-			'library',
-			'dynamic-tags',
-			'scroll-snap',
-			'sticky',
-			'wp-cli',
-			'lottie',
-			'code-highlight',
-			'video-playlist',
-			'payments',
-			'progress-tracker',
-			'mega-menu',
-			'nested-carousel',
-			'loop-filter',
-			'tiers',
-			'link-in-bio',
-			'floating-buttons',
-			'search',
-		];
-
-		foreach ( $modules as $module_name ) {
+		foreach ( $this->get_modules_names() as $module_name ) {
 			$class_name = str_replace( '-', ' ', $module_name );
-			$class_name = str_replace( ' ', '', ucwords( $class_name ) );
-			$class_name = '\ElementorPro\Modules\\' . $class_name . '\Module';
 
-			/** @var Module_Base $class_name */
+			$class_name = str_replace( ' ', '', ucwords( $class_name ) );
+
+			$class_name = $modules_namespace_prefix . '\\Modules\\' . $class_name . '\Module';
+
+			/** @var Module $class_name */
+
 			$experimental_data = $class_name::get_experimental_data();
 
 			if ( $experimental_data ) {
-				Plugin::elementor()->experiments->add_feature( $experimental_data );
+				Plugin::$instance->experiments->add_feature( $experimental_data );
 
-				if ( ! Plugin::elementor()->experiments->is_feature_active( $experimental_data['name'] ) ) {
+				if ( ! Plugin::$instance->experiments->is_feature_active( $experimental_data['name'] ) ) {
 					continue;
 				}
 			}
@@ -101,9 +67,77 @@ final class Modules_Manager {
 	}
 
 	/**
-	 * @param string $module_name
+	 * Get modules names.
 	 *
-	 * @return Module_Base|Module_Base[]
+	 * Retrieve the modules names.
+	 *
+	 * @since 2.0.0
+	 * @access public
+	 *
+	 * @return string[] Modules names.
+	 */
+	public function get_modules_names() {
+		return [
+			'admin-bar',
+			'history',
+			'library',
+			'dynamic-tags',
+			'page-templates',
+			'gutenberg',
+			'wp-cli',
+			'safe-mode',
+			'ai',
+			'notifications',
+			'usage',
+			'dev-tools',
+			'landing-pages',
+			'compatibility-tag',
+			'generator-tag',
+			'elements-color-picker',
+			'shapes',
+			'favorites',
+			'admin-top-bar',
+			'element-manager',
+			'nested-elements',
+			// Depends on Nested Elements module
+			'nested-tabs',
+			'nested-accordion',
+			'container-converter',
+			'web-cli',
+			'promotions',
+			'notes',
+			'performance-lab',
+			'lazyload',
+			'image-loading-optimization',
+			'kit-elements-defaults',
+			'announcements',
+			'editor-app-bar',
+			'site-navigation',
+			'styleguide',
+			'element-cache',
+			'apps',
+			'home',
+			'link-in-bio',
+			'floating-buttons',
+			'content-sanitizer',
+			'editor-events',
+			'atomic-widgets',
+			'wc-product-editor',
+			'checklist',
+		];
+	}
+
+	/**
+	 * Get modules.
+	 *
+	 * Retrieve all the registered modules or a specific module.
+	 *
+	 * @since 2.0.0
+	 * @access public
+	 *
+	 * @param string $module_name Module name.
+	 *
+	 * @return null|Module|Module[] All the registered modules or a specific module.
 	 */
 	public function get_modules( $module_name ) {
 		if ( $module_name ) {
@@ -115,5 +149,19 @@ final class Modules_Manager {
 		}
 
 		return $this->modules;
+	}
+
+	/**
+	 * Get modules namespace prefix.
+	 *
+	 * Retrieve the modules namespace prefix.
+	 *
+	 * @since 2.0.0
+	 * @access protected
+	 *
+	 * @return string Modules namespace prefix.
+	 */
+	protected function get_modules_namespace_prefix() {
+		return 'Elementor';
 	}
 }

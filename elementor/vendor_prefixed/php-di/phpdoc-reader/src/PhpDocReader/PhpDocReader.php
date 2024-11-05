@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\PhpDocReader;
+namespace ElementorDeps\PhpDocReader;
 
-use ElementorProDeps\PhpDocReader\PhpParser\UseStatementParser;
+use ElementorDeps\PhpDocReader\PhpParser\UseStatementParser;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionParameter;

@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\Invoker\ParameterResolver;
+namespace ElementorDeps\Invoker\ParameterResolver;
 
 use ReflectionException;
 use ReflectionFunctionAbstract;

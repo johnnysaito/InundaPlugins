@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Annotation;
+namespace ElementorDeps\DI\Annotation;
 
 /**
  * "Injectable" annotation.

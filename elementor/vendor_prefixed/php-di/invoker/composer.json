@@ -14,12 +14,12 @@
     "type": "library",
     "autoload": {
         "psr-4": {
-            "ElementorProDeps\\Invoker\\": "src\/"
+            "ElementorDeps\\Invoker\\": "src\/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "ElementorProDeps\\Invoker\\Test\\": "tests\/"
+            "ElementorDeps\\Invoker\\Test\\": "tests\/"
         }
     },
     "require": {

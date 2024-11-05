@@ -1,10 +1,10 @@
 <?php
 
-namespace ElementorProDeps\DI\Definition\Source;
+namespace ElementorDeps\DI\Definition\Source;
 
-use ElementorProDeps\DI\Definition\AutowireDefinition;
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\AutowireDefinition;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\ObjectDefinition;
 /**
  * Decorator that caches another definition source.
  *

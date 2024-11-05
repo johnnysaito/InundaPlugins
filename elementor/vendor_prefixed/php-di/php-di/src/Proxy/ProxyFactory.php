@@ -1,14 +1,14 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Proxy;
+namespace ElementorDeps\DI\Proxy;
 
-use ElementorProDeps\ProxyManager\Configuration;
-use ElementorProDeps\ProxyManager\Factory\LazyLoadingValueHolderFactory;
-use ElementorProDeps\ProxyManager\FileLocator\FileLocator;
-use ElementorProDeps\ProxyManager\GeneratorStrategy\EvaluatingGeneratorStrategy;
-use ElementorProDeps\ProxyManager\GeneratorStrategy\FileWriterGeneratorStrategy;
-use ElementorProDeps\ProxyManager\Proxy\LazyLoadingInterface;
+use ElementorDeps\ProxyManager\Configuration;
+use ElementorDeps\ProxyManager\Factory\LazyLoadingValueHolderFactory;
+use ElementorDeps\ProxyManager\FileLocator\FileLocator;
+use ElementorDeps\ProxyManager\GeneratorStrategy\EvaluatingGeneratorStrategy;
+use ElementorDeps\ProxyManager\GeneratorStrategy\FileWriterGeneratorStrategy;
+use ElementorDeps\ProxyManager\Proxy\LazyLoadingInterface;
 /**
  * Creates proxy classes.
  *

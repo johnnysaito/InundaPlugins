@@ -1,11 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Source;
+namespace ElementorDeps\DI\Definition\Source;
 
-use ElementorProDeps\DI\Definition\ObjectDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition\MethodInjection;
-use ElementorProDeps\DI\Definition\Reference;
+use ElementorDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition\MethodInjection;
+use ElementorDeps\DI\Definition\Reference;
 use ReflectionNamedType;
 /**
  * Reads DI class definitions using reflection.

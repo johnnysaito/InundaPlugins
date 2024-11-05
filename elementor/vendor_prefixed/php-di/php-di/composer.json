@@ -15,7 +15,7 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "ElementorProDeps\\DI\\": "src\/"
+            "ElementorDeps\\DI\\": "src\/"
         },
         "files": [
             "src\/functions.php"
@@ -23,8 +23,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "ElementorProDeps\\DI\\Test\\IntegrationTest\\": "tests\/IntegrationTest\/",
-            "ElementorProDeps\\DI\\Test\\UnitTest\\": "tests\/UnitTest\/"
+            "ElementorDeps\\DI\\Test\\IntegrationTest\\": "tests\/IntegrationTest\/",
+            "ElementorDeps\\DI\\Test\\UnitTest\\": "tests\/UnitTest\/"
         }
     },
     "scripts": {

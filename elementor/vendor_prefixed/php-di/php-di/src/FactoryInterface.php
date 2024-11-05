@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI;
+namespace ElementorDeps\DI;
 
 /**
  * Describes the basic interface of a factory.

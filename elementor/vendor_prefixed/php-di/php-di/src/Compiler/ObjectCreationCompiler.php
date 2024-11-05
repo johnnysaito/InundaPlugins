@@ -1,11 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Compiler;
+namespace ElementorDeps\DI\Compiler;
 
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition\MethodInjection;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition\MethodInjection;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionParameter;

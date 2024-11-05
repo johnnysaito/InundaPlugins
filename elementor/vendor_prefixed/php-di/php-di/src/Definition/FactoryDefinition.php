@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition;
+namespace ElementorDeps\DI\Definition;
 
 /**
  * Definition of a value or class with a factory.

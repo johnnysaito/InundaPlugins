@@ -1,6 +1,6 @@
 <?php
 
-namespace ElementorProDeps\Psr\Container;
+namespace ElementorDeps\Psr\Container;
 
 use Throwable;
 /**

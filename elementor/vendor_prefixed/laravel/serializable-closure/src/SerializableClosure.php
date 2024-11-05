@@ -1,12 +1,12 @@
 <?php
 
-namespace ElementorProDeps\Laravel\SerializableClosure;
+namespace ElementorDeps\Laravel\SerializableClosure;
 
 use Closure;
-use ElementorProDeps\Laravel\SerializableClosure\Exceptions\InvalidSignatureException;
-use ElementorProDeps\Laravel\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
-use ElementorProDeps\Laravel\SerializableClosure\Serializers\Signed;
-use ElementorProDeps\Laravel\SerializableClosure\Signers\Hmac;
+use ElementorDeps\Laravel\SerializableClosure\Exceptions\InvalidSignatureException;
+use ElementorDeps\Laravel\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
+use ElementorDeps\Laravel\SerializableClosure\Serializers\Signed;
+use ElementorDeps\Laravel\SerializableClosure\Signers\Hmac;
 class SerializableClosure
 {
     /**

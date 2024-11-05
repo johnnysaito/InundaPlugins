@@ -1,10 +1,10 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\Invoker\ParameterResolver\Container;
+namespace ElementorDeps\Invoker\ParameterResolver\Container;
 
-use ElementorProDeps\Invoker\ParameterResolver\ParameterResolver;
-use ElementorProDeps\Psr\Container\ContainerInterface;
+use ElementorDeps\Invoker\ParameterResolver\ParameterResolver;
+use ElementorDeps\Psr\Container\ContainerInterface;
 use ReflectionFunctionAbstract;
 use ReflectionNamedType;
 /**

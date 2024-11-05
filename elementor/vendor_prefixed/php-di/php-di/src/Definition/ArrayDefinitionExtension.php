@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition;
+namespace ElementorDeps\DI\Definition;
 
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
 /**
  * Extends an array definition by adding new elements into it.
  *

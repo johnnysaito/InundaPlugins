@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Compiler;
+namespace ElementorDeps\DI\Compiler;
 
-use ElementorProDeps\DI\Factory\RequestedEntry;
+use ElementorDeps\DI\Factory\RequestedEntry;
 /**
  * @author Matthieu Napoli <matthieu@mnapoli.fr>
  */

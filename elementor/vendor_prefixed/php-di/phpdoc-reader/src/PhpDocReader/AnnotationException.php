@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\PhpDocReader;
+namespace ElementorDeps\PhpDocReader;
 
 /**
  * We stumbled upon an invalid class/property/method annotation.

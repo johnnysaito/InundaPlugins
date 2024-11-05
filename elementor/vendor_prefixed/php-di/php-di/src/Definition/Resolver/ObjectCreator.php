@@ -1,17 +1,17 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Resolver;
+namespace ElementorDeps\DI\Definition\Resolver;
 
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition\PropertyInjection;
-use ElementorProDeps\DI\DependencyException;
-use ElementorProDeps\DI\Proxy\ProxyFactory;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition\PropertyInjection;
+use ElementorDeps\DI\DependencyException;
+use ElementorDeps\DI\Proxy\ProxyFactory;
 use Exception;
-use ElementorProDeps\ProxyManager\Proxy\LazyLoadingInterface;
-use ElementorProDeps\Psr\Container\NotFoundExceptionInterface;
+use ElementorDeps\ProxyManager\Proxy\LazyLoadingInterface;
+use ElementorDeps\Psr\Container\NotFoundExceptionInterface;
 use ReflectionClass;
 use ReflectionProperty;
 /**

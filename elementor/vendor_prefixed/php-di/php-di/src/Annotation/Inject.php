@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Annotation;
+namespace ElementorDeps\DI\Annotation;
 
-use ElementorProDeps\DI\Definition\Exception\InvalidAnnotation;
+use ElementorDeps\DI\Definition\Exception\InvalidAnnotation;
 /**
  * "Inject" annotation.
  *

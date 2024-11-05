@@ -1,20 +1,20 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI;
+namespace ElementorDeps\DI;
 
-use ElementorProDeps\DI\Compiler\Compiler;
-use ElementorProDeps\DI\Definition\Source\AnnotationBasedAutowiring;
-use ElementorProDeps\DI\Definition\Source\DefinitionArray;
-use ElementorProDeps\DI\Definition\Source\DefinitionFile;
-use ElementorProDeps\DI\Definition\Source\DefinitionSource;
-use ElementorProDeps\DI\Definition\Source\NoAutowiring;
-use ElementorProDeps\DI\Definition\Source\ReflectionBasedAutowiring;
-use ElementorProDeps\DI\Definition\Source\SourceCache;
-use ElementorProDeps\DI\Definition\Source\SourceChain;
-use ElementorProDeps\DI\Proxy\ProxyFactory;
+use ElementorDeps\DI\Compiler\Compiler;
+use ElementorDeps\DI\Definition\Source\AnnotationBasedAutowiring;
+use ElementorDeps\DI\Definition\Source\DefinitionArray;
+use ElementorDeps\DI\Definition\Source\DefinitionFile;
+use ElementorDeps\DI\Definition\Source\DefinitionSource;
+use ElementorDeps\DI\Definition\Source\NoAutowiring;
+use ElementorDeps\DI\Definition\Source\ReflectionBasedAutowiring;
+use ElementorDeps\DI\Definition\Source\SourceCache;
+use ElementorDeps\DI\Definition\Source\SourceChain;
+use ElementorDeps\DI\Proxy\ProxyFactory;
 use InvalidArgumentException;
-use ElementorProDeps\Psr\Container\ContainerInterface;
+use ElementorDeps\Psr\Container\ContainerInterface;
 /**
  * Helper to create and configure a Container.
  *

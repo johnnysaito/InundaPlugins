@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\Invoker\Exception;
+namespace ElementorDeps\Invoker\Exception;
 
 /**
  * Impossible to invoke the callable.

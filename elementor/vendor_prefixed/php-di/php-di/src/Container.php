@@ -1,32 +1,32 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI;
+namespace ElementorDeps\DI;
 
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\FactoryDefinition;
-use ElementorProDeps\DI\Definition\Helper\DefinitionHelper;
-use ElementorProDeps\DI\Definition\InstanceDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
-use ElementorProDeps\DI\Definition\Resolver\DefinitionResolver;
-use ElementorProDeps\DI\Definition\Resolver\ResolverDispatcher;
-use ElementorProDeps\DI\Definition\Source\DefinitionArray;
-use ElementorProDeps\DI\Definition\Source\MutableDefinitionSource;
-use ElementorProDeps\DI\Definition\Source\ReflectionBasedAutowiring;
-use ElementorProDeps\DI\Definition\Source\SourceChain;
-use ElementorProDeps\DI\Definition\ValueDefinition;
-use ElementorProDeps\DI\Invoker\DefinitionParameterResolver;
-use ElementorProDeps\DI\Proxy\ProxyFactory;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\FactoryDefinition;
+use ElementorDeps\DI\Definition\Helper\DefinitionHelper;
+use ElementorDeps\DI\Definition\InstanceDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\Resolver\DefinitionResolver;
+use ElementorDeps\DI\Definition\Resolver\ResolverDispatcher;
+use ElementorDeps\DI\Definition\Source\DefinitionArray;
+use ElementorDeps\DI\Definition\Source\MutableDefinitionSource;
+use ElementorDeps\DI\Definition\Source\ReflectionBasedAutowiring;
+use ElementorDeps\DI\Definition\Source\SourceChain;
+use ElementorDeps\DI\Definition\ValueDefinition;
+use ElementorDeps\DI\Invoker\DefinitionParameterResolver;
+use ElementorDeps\DI\Proxy\ProxyFactory;
 use InvalidArgumentException;
-use ElementorProDeps\Invoker\Invoker;
-use ElementorProDeps\Invoker\InvokerInterface;
-use ElementorProDeps\Invoker\ParameterResolver\AssociativeArrayResolver;
-use ElementorProDeps\Invoker\ParameterResolver\Container\TypeHintContainerResolver;
-use ElementorProDeps\Invoker\ParameterResolver\DefaultValueResolver;
-use ElementorProDeps\Invoker\ParameterResolver\NumericArrayResolver;
-use ElementorProDeps\Invoker\ParameterResolver\ResolverChain;
-use ElementorProDeps\Psr\Container\ContainerInterface;
+use ElementorDeps\Invoker\Invoker;
+use ElementorDeps\Invoker\InvokerInterface;
+use ElementorDeps\Invoker\ParameterResolver\AssociativeArrayResolver;
+use ElementorDeps\Invoker\ParameterResolver\Container\TypeHintContainerResolver;
+use ElementorDeps\Invoker\ParameterResolver\DefaultValueResolver;
+use ElementorDeps\Invoker\ParameterResolver\NumericArrayResolver;
+use ElementorDeps\Invoker\ParameterResolver\ResolverChain;
+use ElementorDeps\Psr\Container\ContainerInterface;
 /**
  * Dependency Injection Container.
  *

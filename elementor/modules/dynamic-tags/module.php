@@ -1,161 +1,165 @@
 <?php
-namespace ElementorPro\Modules\DynamicTags;
+namespace Elementor\Modules\DynamicTags;
 
-use Elementor\Modules\DynamicTags\Module as TagsModule;
-use ElementorPro\Modules\DynamicTags\ACF;
-use ElementorPro\Modules\DynamicTags\Toolset;
-use ElementorPro\Modules\DynamicTags\Pods;
-use ElementorPro\Core\Utils;
-use ElementorPro\License\API;
+use Elementor\Core\Base\Module as BaseModule;
+use Elementor\Core\DynamicTags\Base_Tag;
+use Elementor\Core\DynamicTags\Manager;
+use Elementor\Plugin;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
-class Module extends TagsModule {
+/**
+ * Elementor dynamic tags module.
+ *
+ * Elementor dynamic tags module handler class is responsible for registering
+ * and managing Elementor dynamic tags modules.
+ *
+ * @since 2.0.0
+ */
+class Module extends BaseModule {
 
-	const AUTHOR_GROUP = 'author';
+	/**
+	 * Base dynamic tag group.
+	 */
+	const BASE_GROUP = 'base';
 
-	const POST_GROUP = 'post';
+	/**
+	 * Dynamic tags text category.
+	 */
+	const TEXT_CATEGORY = 'text';
 
-	const COMMENTS_GROUP = 'comments';
+	/**
+	 * Dynamic tags URL category.
+	 */
+	const URL_CATEGORY = 'url';
 
-	const SITE_GROUP = 'site';
+	/**
+	 * Dynamic tags image category.
+	 */
+	const IMAGE_CATEGORY = 'image';
 
-	const ARCHIVE_GROUP = 'archive';
+	/**
+	 * Dynamic tags media category.
+	 */
+	const MEDIA_CATEGORY = 'media';
 
-	const MEDIA_GROUP = 'media';
+	/**
+	 * Dynamic tags post meta category.
+	 */
+	const POST_META_CATEGORY = 'post_meta';
 
-	const ACTION_GROUP = 'action';
+	/**
+	 * Dynamic tags gallery category.
+	 */
+	const GALLERY_CATEGORY = 'gallery';
 
-	const WOOCOMMERCE_GROUP = 'woocommerce';
+	/**
+	 * Dynamic tags number category.
+	 */
+	const NUMBER_CATEGORY = 'number';
 
-	const LICENSE_FEATURE_ACF_NAME = 'dynamic-tags-acf';
-	const LICENSE_FEATURE_PODS_NAME = 'dynamic-tags-pods';
-	const LICENSE_FEATURE_TOOLSET_NAME = 'dynamic-tags-toolset';
+	/**
+	 * Dynamic tags number category.
+	 */
+	const COLOR_CATEGORY = 'color';
 
+	/**
+	 * Dynamic tags datetime category.
+	 */
+	const DATETIME_CATEGORY = 'datetime';
+
+	/**
+	 * Dynamic tags module constructor.
+	 *
+	 * Initializing Elementor dynamic tags module.
+	 *
+	 * @since 2.0.0
+	 * @access public
+	 */
 	public function __construct() {
-		parent::__construct();
+		$this->register_groups();
 
-		$this->add_component( 'author-meta-filter', new Components\Author_Meta_Filter() );
-
-		// ACF 5 and up
-		if ( class_exists( '\acf' ) && function_exists( 'acf_get_field_groups' ) && API::is_licence_has_feature( self::LICENSE_FEATURE_ACF_NAME, API::BC_VALIDATION_CALLBACK ) ) {
-			$this->add_component( 'acf', new ACF\Module() );
-		}
-
-		if ( function_exists( 'wpcf_admin_fields_get_groups' ) && API::is_licence_has_feature( self::LICENSE_FEATURE_TOOLSET_NAME, API::BC_VALIDATION_CALLBACK ) ) {
-			$this->add_component( 'toolset', new Toolset\Module() );
-		}
-
-		if ( function_exists( 'pods' ) && API::is_licence_has_feature( self::LICENSE_FEATURE_PODS_NAME, API::BC_VALIDATION_CALLBACK ) ) {
-			$this->add_component( 'pods', new Pods\Module() );
-		}
-
-		/*
-		 * WooCommerce Add To Cart Dynamic Tag.
-		 *
-		 * The WC ATC Dynamic Tag returns a URL that adds items to a users cart
-		 * via the URL parameters `?add-to-cart=' . $product_id . '&quantity=' . $quantity`.
-		 * Normally this URL method redirects to the website's Home page after adding the items to
-		 * the cart.
-		 *
-		 * Since the behavior of the Tag should be identical to the "Add to Cart" widget, clicking an
-		 * element that is using the tag needs to redirect to the Single Product page for the added
-		 * product or the Cart page after this process if the user selected that setting in WooCommerce.
-		 *
-		 * To accomplish that, an extra parameter in the URL ('&e-redirect=') is used. When this
-		 * paramater is found, the WooCommerce Add to Cart Dynamic Tag will redirect to the
-		 * appropriate page.
-		 */
-
-		//phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The nonce is verified in the WC class.
-		$add_to_cart = Utils::_unstable_get_super_global_value( $_REQUEST, 'add-to-cart' );
-		//phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The nonce is verified in the WC class.
-		$redirect = Utils::_unstable_get_super_global_value( $_REQUEST, 'e-redirect' );
-
-		if ( $add_to_cart && $redirect ) {
-			add_filter( 'woocommerce_add_to_cart_redirect', [ $this, 'filter_woocommerce_add_to_cart_redirect' ], 10, 1 );
-		}
-
-		add_filter( 'elementor/document/save/data', [ $this->get_component( 'author-meta-filter' ), 'filter' ], 10, 2 );
+		add_action( 'elementor/dynamic_tags/register', [ $this, 'register_tags' ] );
 	}
 
-	public function filter_woocommerce_add_to_cart_redirect( $wc_get_cart_url ) {
-		//phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verification is not required here.
-		return esc_url( Utils::_unstable_get_super_global_value( $_REQUEST, 'e-redirect' ) );
-	}
-
+	/**
+	 * Get module name.
+	 *
+	 * Retrieve the dynamic tags module name.
+	 *
+	 * @since 2.0.0
+	 * @access public
+	 *
+	 * @return string Module name.
+	 */
 	public function get_name() {
-		return 'tags';
+		return 'dynamic_tags';
 	}
 
+	/**
+	 * Get classes names.
+	 *
+	 * Retrieve the dynamic tag classes names.
+	 *
+	 * @since 2.0.0
+	 * @access public
+	 *
+	 * @return array Tag dynamic tag classes names.
+	 */
 	public function get_tag_classes_names() {
-		return [
-			'Archive_Description',
-			'Archive_Meta',
-			'Archive_Title',
-			'Archive_URL',
-			'Author_Info',
-			'Author_Meta',
-			'Author_Name',
-			'Author_Profile_Picture',
-			'Author_URL',
-			'Comments_Number',
-			'Comments_URL',
-			'Page_Title',
-			'Post_Custom_Field',
-			'Post_Date',
-			'Post_Excerpt',
-			'Post_Featured_Image',
-			'Post_Gallery',
-			'Post_ID',
-			'Post_Terms',
-			'Post_Time',
-			'Post_Title',
-			'Post_URL',
-			'Site_Logo',
-			'Site_Tagline',
-			'Site_Title',
-			'Site_URL',
-			'Internal_URL',
-			'Current_Date_Time',
-			'Request_Parameter',
-			'Lightbox',
-			'Featured_Image_Data',
-			'Shortcode',
-			'Contact_URL',
-			'User_Info',
-			'User_Profile_Picture',
-		];
+		return [];
 	}
 
+	/**
+	 * Get groups.
+	 *
+	 * Retrieve the dynamic tag groups.
+	 *
+	 * @since 2.0.0
+	 * @access public
+	 *
+	 * @return array Tag dynamic tag groups.
+	 */
 	public function get_groups() {
 		return [
-			self::POST_GROUP => [
-				'title' => esc_html__( 'Post', 'elementor-pro' ),
-			],
-			self::ARCHIVE_GROUP => [
-				'title' => esc_html__( 'Archive', 'elementor-pro' ),
-			],
-			self::SITE_GROUP => [
-				'title' => esc_html__( 'Site', 'elementor-pro' ),
-			],
-			self::MEDIA_GROUP => [
-				'title' => esc_html__( 'Media', 'elementor-pro' ),
-			],
-			self::ACTION_GROUP => [
-				'title' => esc_html__( 'Actions', 'elementor-pro' ),
-			],
-			self::AUTHOR_GROUP => [
-				'title' => esc_html__( 'Author', 'elementor-pro' ),
-			],
-			self::COMMENTS_GROUP => [
-				'title' => esc_html__( 'Comments', 'elementor-pro' ),
-			],
-			self::WOOCOMMERCE_GROUP => [
-				'title' => esc_html__( 'WooCommerce', 'elementor-pro' ),
+			self::BASE_GROUP => [
+				'title' => 'Base Tags',
 			],
 		];
+	}
+
+	/**
+	 * Register groups.
+	 *
+	 * Add all the available tag groups.
+	 *
+	 * @since 2.0.0
+	 * @access private
+	 */
+	private function register_groups() {
+		foreach ( $this->get_groups() as $group_name => $group_settings ) {
+			Plugin::$instance->dynamic_tags->register_group( $group_name, $group_settings );
+		}
+	}
+
+	/**
+	 * Register tags.
+	 *
+	 * Add all the available dynamic tags.
+	 *
+	 * @since 2.0.0
+	 * @access public
+	 *
+	 * @param Manager $dynamic_tags
+	 */
+	public function register_tags( $dynamic_tags ) {
+		foreach ( $this->get_tag_classes_names() as $tag_class ) {
+			/** @var Base_Tag $class_name */
+			$class_name = $this->get_reflection()->getNamespaceName() . '\Tags\\' . $tag_class;
+
+			$dynamic_tags->register( new $class_name() );
+		}
 	}
 }

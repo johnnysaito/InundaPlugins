@@ -1,67 +1,63 @@
 <?php
-namespace ElementorPro\Core\Editor;
+namespace Elementor\Core\Editor;
 
-use ElementorPro\License\API;
-use ElementorPro\License\Admin;
-use Elementor\Core\Editor\Promotion as Base_Promotion;
-use ElementorPro\Plugin;
+use Elementor\Core\Utils\Promotions\Filtered_Promotions_Manager;
+use Elementor\Utils;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-class Promotion extends Base_Promotion {
+class Promotion {
+
+	/**
+	 * @return array
+	 */
 	public function get_elements_promotion() {
-		if ( API::is_need_to_show_upgrade_promotion() ) {
-			return $this->get_elements_promotion__higher_tiers();
-		}
-
-		if ( API::is_license_active() ) {
-			return parent::get_elements_promotion();
-		}
-
-		return $this->get_elements_promotion__default();
+		return Filtered_Promotions_Manager::get_filtered_promotion_data(
+			$this->get_promotion_data(),
+			'elementor/editor/promotion/get_elements_promotion',
+			'action_button',
+			'url'
+		);
 	}
 
-	private function get_elements_promotion__default() {
-		$is_license_expired = API::is_license_expired();
-
-		return [
-			/* translators: %s: Widget title. */
-			'title' => __( '%s Widget', 'elementor-pro' ),
-			'content' => $is_license_expired
-				/* translators: %s: Widget title. */
-				? __(
-					'Renew your Elementor Pro subscription to get %s and dozens more Pro widgets to expand your web-creation toolbox.',
-					'elementor-pro'
-				)
-				/* translators: %s: Widget title. */
-				: __(
-					'Use %s widget and dozens more pro features to extend your toolbox and build sites faster and better.',
-					'elementor-pro'
-				),
-			'action_button' => $is_license_expired ? [
-				'text' => __( 'Renew now', 'elementor-pro' ),
-				'url' => 'https://my.elementor.com/subscriptions/?utm_source=%s-pro-widget&utm_medium=wp-dash&utm_campaign=renew-license',
-				'classes' => [ 'elementor-button', 'elementor-button-brand' ],
-			] : [
-				'text' => __( 'Connect & Activate', 'elementor-pro' ),
-				'url' => Admin::get_url(),
-			],
+	/**
+	 * @return array
+	 */
+	private function get_action_button_content(): array {
+		$has_pro = Utils::has_pro();
+		return $has_pro ? [
+			'text' => __( 'Connect & Activate', 'elementor' ),
+			'url' => admin_url( 'admin.php?page=elementor-license' ),
+		] : [
+			'text' => __( 'Upgrade Now', 'elementor' ),
+			'url' => 'https://go.elementor.com/go-pro-%s',
 		];
 	}
 
-	private function get_elements_promotion__higher_tiers() {
+	/**
+	 * @return string
+	 */
+	private function get_promotion_url(): string {
+		return Utils::has_pro()
+			? admin_url( 'admin.php?page=elementor-license' )
+			: 'https://go.elementor.com/go-pro-%s';
+	}
+
+	/**
+	 * @return array
+	 */
+	private function get_promotion_data(): array {
 		return [
 			/* translators: %s: Widget title. */
-			'title' => __( '%s Widget', 'elementor-pro' ),
+			'title' => __( '%s Widget', 'elementor' ),
 			/* translators: %s: Widget title. */
-			'content' => __( 'Upgrade to Elementor Pro Advanced to get the %s widget as well as additional professional and ecommerce widgets.', 'elementor-pro' ),
-			'action_button' => [
-				'text' => __( 'Upgrade now', 'elementor-pro' ),
-				'url' => 'https://go.elementor.com/go-pro-advanced-%s',
-				'classes' => [ 'elementor-button', 'elementor-button-brand', 'go-pro' ],
-			],
+			'content' => __(
+				'Use %s widget and dozens more pro features to extend your toolbox and build sites faster and better.',
+				'elementor'
+			),
+			'action_button' => $this->get_action_button_content(),
 		];
 	}
 }

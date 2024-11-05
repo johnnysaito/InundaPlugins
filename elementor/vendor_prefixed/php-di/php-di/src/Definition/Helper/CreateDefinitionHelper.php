@@ -1,13 +1,13 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Helper;
+namespace ElementorDeps\DI\Definition\Helper;
 
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition\MethodInjection;
-use ElementorProDeps\DI\Definition\ObjectDefinition\PropertyInjection;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition\MethodInjection;
+use ElementorDeps\DI\Definition\ObjectDefinition\PropertyInjection;
 /**
  * Helps defining how to create an instance of a class.
  *

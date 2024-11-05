@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Factory;
+namespace ElementorDeps\DI\Factory;
 
 /**
  * Represents the container entry that was requested.

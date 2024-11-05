@@ -1,16 +1,16 @@
 <?php
 
-namespace ElementorProDeps\Laravel\SerializableClosure\Serializers;
+namespace ElementorDeps\Laravel\SerializableClosure\Serializers;
 
 use Closure;
 use DateTimeInterface;
-use ElementorProDeps\Laravel\SerializableClosure\Contracts\Serializable;
-use ElementorProDeps\Laravel\SerializableClosure\SerializableClosure;
-use ElementorProDeps\Laravel\SerializableClosure\Support\ClosureScope;
-use ElementorProDeps\Laravel\SerializableClosure\Support\ClosureStream;
-use ElementorProDeps\Laravel\SerializableClosure\Support\ReflectionClosure;
-use ElementorProDeps\Laravel\SerializableClosure\Support\SelfReference;
-use ElementorProDeps\Laravel\SerializableClosure\UnsignedSerializableClosure;
+use ElementorDeps\Laravel\SerializableClosure\Contracts\Serializable;
+use ElementorDeps\Laravel\SerializableClosure\SerializableClosure;
+use ElementorDeps\Laravel\SerializableClosure\Support\ClosureScope;
+use ElementorDeps\Laravel\SerializableClosure\Support\ClosureStream;
+use ElementorDeps\Laravel\SerializableClosure\Support\ReflectionClosure;
+use ElementorDeps\Laravel\SerializableClosure\Support\SelfReference;
+use ElementorDeps\Laravel\SerializableClosure\UnsignedSerializableClosure;
 use ReflectionObject;
 use UnitEnum;
 class Native implements Serializable

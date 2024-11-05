@@ -1,11 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Helper;
+namespace ElementorDeps\DI\Definition\Helper;
 
-use ElementorProDeps\DI\Definition\DecoratorDefinition;
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\FactoryDefinition;
+use ElementorDeps\DI\Definition\DecoratorDefinition;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\FactoryDefinition;
 /**
  * Helps defining how to create an instance of a class using a factory (callable).
  *

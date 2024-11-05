@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\ObjectDefinition;
+namespace ElementorDeps\DI\Definition\ObjectDefinition;
 
-use ElementorProDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Definition;
 /**
  * Describe an injection in an object method.
  *

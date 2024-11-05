@@ -1,11 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Resolver;
+namespace ElementorDeps\DI\Definition\Resolver;
 
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition\MethodInjection;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition\MethodInjection;
 use ReflectionMethod;
 use ReflectionParameter;
 /**

@@ -1,12 +1,12 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition;
+namespace ElementorDeps\DI\Definition;
 
-use ElementorProDeps\DI\Definition\Dumper\ObjectDefinitionDumper;
-use ElementorProDeps\DI\Definition\ObjectDefinition\MethodInjection;
-use ElementorProDeps\DI\Definition\ObjectDefinition\PropertyInjection;
-use ElementorProDeps\DI\Definition\Source\DefinitionArray;
+use ElementorDeps\DI\Definition\Dumper\ObjectDefinitionDumper;
+use ElementorDeps\DI\Definition\ObjectDefinition\MethodInjection;
+use ElementorDeps\DI\Definition\ObjectDefinition\PropertyInjection;
+use ElementorDeps\DI\Definition\Source\DefinitionArray;
 use ReflectionClass;
 /**
  * Defines how an object can be instantiated.

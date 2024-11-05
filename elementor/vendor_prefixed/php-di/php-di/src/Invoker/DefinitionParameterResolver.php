@@ -1,12 +1,12 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Invoker;
+namespace ElementorDeps\DI\Invoker;
 
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\Helper\DefinitionHelper;
-use ElementorProDeps\DI\Definition\Resolver\DefinitionResolver;
-use ElementorProDeps\Invoker\ParameterResolver\ParameterResolver;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Helper\DefinitionHelper;
+use ElementorDeps\DI\Definition\Resolver\DefinitionResolver;
+use ElementorDeps\Invoker\ParameterResolver\ParameterResolver;
 use ReflectionFunctionAbstract;
 /**
  * Resolves callable parameters using definitions.

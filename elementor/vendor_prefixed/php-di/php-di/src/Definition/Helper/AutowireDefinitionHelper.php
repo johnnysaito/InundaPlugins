@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Helper;
+namespace ElementorDeps\DI\Definition\Helper;
 
-use ElementorProDeps\DI\Definition\AutowireDefinition;
+use ElementorDeps\DI\Definition\AutowireDefinition;
 /**
  * Helps defining how to create an instance of a class using autowiring.
  *

@@ -1,17 +1,17 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\Invoker;
+namespace ElementorDeps\Invoker;
 
-use ElementorProDeps\Invoker\Exception\NotCallableException;
-use ElementorProDeps\Invoker\Exception\NotEnoughParametersException;
-use ElementorProDeps\Invoker\ParameterResolver\AssociativeArrayResolver;
-use ElementorProDeps\Invoker\ParameterResolver\DefaultValueResolver;
-use ElementorProDeps\Invoker\ParameterResolver\NumericArrayResolver;
-use ElementorProDeps\Invoker\ParameterResolver\ParameterResolver;
-use ElementorProDeps\Invoker\ParameterResolver\ResolverChain;
-use ElementorProDeps\Invoker\Reflection\CallableReflection;
-use ElementorProDeps\Psr\Container\ContainerInterface;
+use ElementorDeps\Invoker\Exception\NotCallableException;
+use ElementorDeps\Invoker\Exception\NotEnoughParametersException;
+use ElementorDeps\Invoker\ParameterResolver\AssociativeArrayResolver;
+use ElementorDeps\Invoker\ParameterResolver\DefaultValueResolver;
+use ElementorDeps\Invoker\ParameterResolver\NumericArrayResolver;
+use ElementorDeps\Invoker\ParameterResolver\ParameterResolver;
+use ElementorDeps\Invoker\ParameterResolver\ResolverChain;
+use ElementorDeps\Invoker\Reflection\CallableReflection;
+use ElementorDeps\Psr\Container\ContainerInterface;
 use ReflectionParameter;
 /**
  * Invoke a callable.

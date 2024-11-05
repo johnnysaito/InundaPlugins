@@ -1,8 +1,8 @@
 <?php
 
-namespace ElementorProDeps\Laravel\SerializableClosure\Signers;
+namespace ElementorDeps\Laravel\SerializableClosure\Signers;
 
-use ElementorProDeps\Laravel\SerializableClosure\Contracts\Signer;
+use ElementorDeps\Laravel\SerializableClosure\Contracts\Signer;
 class Hmac implements Signer
 {
     /**

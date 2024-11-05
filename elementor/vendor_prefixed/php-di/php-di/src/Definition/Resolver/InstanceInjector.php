@@ -1,12 +1,12 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Resolver;
+namespace ElementorDeps\DI\Definition\Resolver;
 
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\InstanceDefinition;
-use ElementorProDeps\DI\DependencyException;
-use ElementorProDeps\Psr\Container\NotFoundExceptionInterface;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\InstanceDefinition;
+use ElementorDeps\DI\DependencyException;
+use ElementorDeps\Psr\Container\NotFoundExceptionInterface;
 /**
  * Injects dependencies on an existing instance.
  *

@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\PhpDocReader\PhpParser;
+namespace ElementorDeps\PhpDocReader\PhpParser;
 
 /**
  * Parses a file for namespaces/use/class declarations.

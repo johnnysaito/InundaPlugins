@@ -1,17 +1,17 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Source;
+namespace ElementorDeps\DI\Definition\Source;
 
-use ElementorProDeps\DI\Definition\ArrayDefinition;
-use ElementorProDeps\DI\Definition\AutowireDefinition;
-use ElementorProDeps\DI\Definition\DecoratorDefinition;
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\FactoryDefinition;
-use ElementorProDeps\DI\Definition\Helper\DefinitionHelper;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
-use ElementorProDeps\DI\Definition\ValueDefinition;
+use ElementorDeps\DI\Definition\ArrayDefinition;
+use ElementorDeps\DI\Definition\AutowireDefinition;
+use ElementorDeps\DI\Definition\DecoratorDefinition;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\FactoryDefinition;
+use ElementorDeps\DI\Definition\Helper\DefinitionHelper;
+use ElementorDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\ValueDefinition;
 /**
  * Turns raw definitions/definition helpers into definitions ready
  * to be resolved or compiled.

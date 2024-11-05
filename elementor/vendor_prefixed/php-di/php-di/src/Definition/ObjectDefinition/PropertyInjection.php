@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\ObjectDefinition;
+namespace ElementorDeps\DI\Definition\ObjectDefinition;
 
 /**
  * Describe an injection in a class property.

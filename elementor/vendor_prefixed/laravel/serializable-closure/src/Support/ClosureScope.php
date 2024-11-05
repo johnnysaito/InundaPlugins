@@ -1,6 +1,6 @@
 <?php
 
-namespace ElementorProDeps\Laravel\SerializableClosure\Support;
+namespace ElementorDeps\Laravel\SerializableClosure\Support;
 
 use SplObjectStorage;
 class ClosureScope extends SplObjectStorage

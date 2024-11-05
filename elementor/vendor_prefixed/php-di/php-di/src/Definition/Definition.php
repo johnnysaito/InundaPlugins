@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition;
+namespace ElementorDeps\DI\Definition;
 
-use ElementorProDeps\DI\Factory\RequestedEntry;
+use ElementorDeps\DI\Factory\RequestedEntry;
 /**
  * Definition.
  *

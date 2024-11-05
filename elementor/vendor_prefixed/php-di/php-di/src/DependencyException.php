@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI;
+namespace ElementorDeps\DI;
 
-use ElementorProDeps\Psr\Container\ContainerExceptionInterface;
+use ElementorDeps\Psr\Container\ContainerExceptionInterface;
 /**
  * Exception for the Container.
  */

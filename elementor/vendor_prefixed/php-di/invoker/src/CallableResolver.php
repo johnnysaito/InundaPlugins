@@ -1,12 +1,12 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\Invoker;
+namespace ElementorDeps\Invoker;
 
 use Closure;
-use ElementorProDeps\Invoker\Exception\NotCallableException;
-use ElementorProDeps\Psr\Container\ContainerInterface;
-use ElementorProDeps\Psr\Container\NotFoundExceptionInterface;
+use ElementorDeps\Invoker\Exception\NotCallableException;
+use ElementorDeps\Psr\Container\ContainerInterface;
+use ElementorDeps\Psr\Container\NotFoundExceptionInterface;
 use ReflectionException;
 use ReflectionMethod;
 /**

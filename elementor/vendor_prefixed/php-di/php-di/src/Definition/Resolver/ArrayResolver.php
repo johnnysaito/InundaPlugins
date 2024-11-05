@@ -1,11 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Resolver;
+namespace ElementorDeps\DI\Definition\Resolver;
 
-use ElementorProDeps\DI\Definition\ArrayDefinition;
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\DependencyException;
+use ElementorDeps\DI\Definition\ArrayDefinition;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\DependencyException;
 use Exception;
 /**
  * Resolves an array definition to a value.

@@ -1,42 +1,61 @@
 <?php
-namespace ElementorPro\Core\Upgrade;
+namespace Elementor\Core\Upgrade;
 
-use Elementor\Core\Base\Document;
-use Elementor\Core\Upgrade\Updater;
+use Elementor\Api;
+use Elementor\Core\Breakpoints\Manager as Breakpoints_Manager;
+use Elementor\Core\Experiments\Manager as Experiments_Manager;
+use Elementor\Core\Settings\Manager as SettingsManager;
+use Elementor\Core\Settings\Page\Manager as SettingsPageManager;
 use Elementor\Icons_Manager;
-use Elementor\Core\Upgrade\Upgrades as Core_Upgrades;
-use ElementorPro\License\API;
-use ElementorPro\Plugin;
-use Elementor\Modules\History\Revisions_Manager;
+use Elementor\Includes\Elements\Container;
+use Elementor\Modules\Usage\Module;
+use Elementor\Plugin;
+use Elementor\Tracker;
+use Elementor\App\Modules\ImportExport\Utils;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
+/**
+ * Elementor upgrades.
+ *
+ * Elementor upgrades handler class is responsible for updating different
+ * Elementor versions.
+ *
+ * @since 1.0.0
+ */
 class Upgrades {
 
-	public static $typography_control_names = [
-		'typography', // The popover toggle ('starter_name').
-		'font_family',
-		'font_size',
-		'font_weight',
-		'text_transform',
-		'font_style',
-		'text_decoration',
-		'line_height',
-		'letter_spacing',
-	];
-
 	public static function _on_each_version( $updater ) {
-		self::_remove_remote_info_api_data();
+		self::recalc_usage_data( $updater );
+		self::remove_remote_info_api_data();
+
+		$uploads_manager = Plugin::$instance->uploads_manager;
+
+		$temp_dir = $uploads_manager->get_temp_dir();
+
+		if ( file_exists( $temp_dir ) ) {
+			$uploads_manager->remove_file_or_dir( $temp_dir );
+		}
 	}
 
-	public static function _v_1_3_0() {
+	/**
+	 * Upgrade Elementor 0.3.2
+	 *
+	 * Change the image widget link URL, setting is to `custom` link.
+	 *
+	 * @since 2.0.0
+	 * @static
+	 * @access public
+	 */
+	public static function _v_0_3_2() {
 		global $wpdb;
 
-		// Fix Button widget to new sizes options
 		$post_ids = $wpdb->get_col(
-			'SELECT `post_id` FROM `' . $wpdb->postmeta . '` WHERE `meta_key` = "_elementor_data" AND `meta_value` LIKE \'%"widgetType":"form"%\';'
+			'SELECT `post_id` FROM `' . $wpdb->postmeta . '`
+					WHERE `meta_key` = \'_elementor_version\'
+						AND `meta_value` = \'0.1\';'
 		);
 
 		if ( empty( $post_ids ) ) {
@@ -44,7 +63,7 @@ class Upgrades {
 		}
 
 		foreach ( $post_ids as $post_id ) {
-			$document = Plugin::elementor()->documents->get( $post_id );
+			$document = Plugin::$instance->documents->get( $post_id );
 
 			if ( $document ) {
 				$data = $document->get_elements_data();
@@ -54,80 +73,19 @@ class Upgrades {
 				continue;
 			}
 
-			$data = Plugin::elementor()->db->iterate_data( $data, function( $element ) {
-				if ( empty( $element['widgetType'] ) || 'form' !== $element['widgetType'] ) {
+			$data = Plugin::$instance->db->iterate_data( $data, function( $element ) {
+				if ( empty( $element['widgetType'] ) || 'image' !== $element['widgetType'] ) {
 					return $element;
 				}
 
-				if ( ! isset( $element['settings']['submit_actions'] ) ) {
-					$element['settings']['submit_actions'] = [ 'email' ];
-				}
-
-				if ( ! empty( $element['settings']['redirect_to'] ) ) {
-					if ( ! in_array( 'redirect', $element['settings']['submit_actions'] ) ) {
-						$element['settings']['submit_actions'][] = 'redirect';
-					}
-				}
-
-				if ( ! empty( $element['settings']['webhooks'] ) ) {
-					if ( ! in_array( 'webhook', $element['settings']['submit_actions'] ) ) {
-						$element['settings']['submit_actions'][] = 'webhook';
-					}
+				if ( ! empty( $element['settings']['link']['url'] ) && ! isset( $element['settings']['link_to'] ) ) {
+					$element['settings']['link_to'] = 'custom';
 				}
 
 				return $element;
 			} );
 
-			self::save_editor( $post_id, $data );
-		}
-	}
-
-	public static function _v_1_4_0() {
-		global $wpdb;
-
-		// Move all posts columns to classic skin (Just add prefix)
-		$post_ids = $wpdb->get_col(
-			'SELECT `post_id` FROM `' . $wpdb->postmeta . '` WHERE `meta_key` = "_elementor_data" AND `meta_value` LIKE \'%"widgetType":"posts"%\';'
-		);
-
-		if ( empty( $post_ids ) ) {
-			return;
-		}
-
-		foreach ( $post_ids as $post_id ) {
-			$document = Plugin::elementor()->documents->get( $post_id );
-
-			if ( $document ) {
-				$data = $document->get_elements_data();
-			}
-
-			if ( empty( $data ) ) {
-				continue;
-			}
-
-			$data = Plugin::elementor()->db->iterate_data( $data, function( $element ) {
-				if ( empty( $element['widgetType'] ) || 'posts' !== $element['widgetType'] ) {
-					return $element;
-				}
-
-				$fields_to_change = [
-					'columns',
-					'columns_mobile',
-					'columns_tablet',
-				];
-
-				foreach ( $fields_to_change as $field ) {
-					// TODO: Remove old value later
-					$new_field_key = 'classic_' . $field;
-					if ( isset( $element['settings'][ $field ] ) && ! isset( $element['settings'][ $new_field_key ] ) ) {
-						$element['settings'][ $new_field_key ] = $element['settings'][ $field ];
-					}
-				}
-
-				return $element;
-			} );
-
-			$document = Plugin::elementor()->documents->get( $post_id );
+			$document = Plugin::$instance->documents->get( $post_id );
 
 			$document->save( [
 				'elements' => $data,
@@ -135,12 +93,26 @@ class Upgrades {
 		}
 	}
 
-	public static function _v_1_12_0() {
+	/**
+	 * Upgrade Elementor 0.9.2
+	 *
+	 * Change the icon widget, icon-box widget and the social-icons widget,
+	 * setting their icon padding size to an empty string.
+	 *
+	 * Change the image widget, setting the image size to full image size.
+	 *
+	 * @since 2.0.0
+	 * @static
+	 * @access public
+	 */
+	public static function _v_0_9_2() {
 		global $wpdb;
 
-		// Set `mailchimp_api_key_source` to `custom`.
+		// Fix Icon/Icon Box Widgets padding.
 		$post_ids = $wpdb->get_col(
-			'SELECT `post_id` FROM `' . $wpdb->postmeta . '` WHERE `meta_key` = "_elementor_data" AND `meta_value` LIKE \'%"widgetType":"form"%\';'
+			'SELECT `post_id` FROM `' . $wpdb->postmeta . '`
+					WHERE `meta_key` = \'_elementor_version\'
+						AND `meta_value` = \'0.2\';'
 		);
 
 		if ( empty( $post_ids ) ) {
@@ -148,8 +120,7 @@ class Upgrades {
 		}
 
 		foreach ( $post_ids as $post_id ) {
-			$do_update = false;
-			$document = Plugin::elementor()->documents->get( $post_id );
+			$document = Plugin::$instance->documents->get( $post_id );
 
 			if ( $document ) {
 				$data = $document->get_elements_data();
@@ -159,38 +130,214 @@ class Upgrades {
 				continue;
 			}
 
-			$data = Plugin::elementor()->db->iterate_data( $data, function( $element ) use ( &$do_update ) {
-				if ( empty( $element['widgetType'] ) || 'form' !== $element['widgetType'] ) {
+			$data = Plugin::$instance->db->iterate_data( $data, function( $element ) {
+				if ( empty( $element['widgetType'] ) ) {
 					return $element;
 				}
 
-				if ( ! empty( $element['settings']['mailchimp_api_key'] ) && ! isset( $element['settings']['mailchimp_api_key_source'] ) ) {
-					$element['settings']['mailchimp_api_key_source'] = 'custom';
-					$do_update = true;
+				if ( in_array( $element['widgetType'], [ 'icon', 'icon-box', 'social-icons' ] ) ) {
+					if ( ! empty( $element['settings']['icon_padding']['size'] ) ) {
+						$element['settings']['icon_padding']['size'] = '';
+					}
+				}
+
+				if ( 'image' === $element['widgetType'] ) {
+					if ( empty( $element['settings']['image_size'] ) ) {
+						$element['settings']['image_size'] = 'full';
+					}
 				}
 
 				return $element;
 			} );
 
-			// Only update if form has mailchimp
-			if ( ! $do_update ) {
-				continue;
-			}
-			// We need the `wp_slash` in order to avoid the unslashing during the `update_post_meta`
-			$json_value = wp_slash( wp_json_encode( $data ) );
+			$document = Plugin::$instance->documents->get( $post_id );
 
-			update_metadata( 'post', $post_id, '_elementor_data', $json_value );
+			$document->save( [
+				'elements' => $data,
+			] );
 		}
 	}
 
 	/**
-	 * Replace 'sticky' => 'yes' with 'sticky' => 'top' in sections.
+	 * Upgrade Elementor 0.11.0
+	 *
+	 * Change the button widget sizes, setting up new button sizes.
+	 *
+	 * @since 2.0.0
+	 * @static
+	 * @access public
 	 */
-	public static function _v_2_0_3() {
+	public static function _v_0_11_0() {
 		global $wpdb;
 
+		// Fix Button widget to new sizes options.
 		$post_ids = $wpdb->get_col(
-			'SELECT `post_id` FROM `' . $wpdb->postmeta . '` WHERE `meta_key` = "_elementor_data" AND `meta_value` LIKE \'%"sticky":"yes"%\';'
+			'SELECT `post_id` FROM `' . $wpdb->postmeta . '`
+					WHERE `meta_key` = \'_elementor_version\'
+						AND `meta_value` = \'0.3\';'
+		);
+
+		if ( empty( $post_ids ) ) {
+			return;
+		}
+
+		foreach ( $post_ids as $post_id ) {
+			$document = Plugin::$instance->documents->get( $post_id );
+
+			if ( $document ) {
+				$data = $document->get_elements_data();
+			}
+
+			if ( empty( $data ) ) {
+				continue;
+			}
+
+			$data = Plugin::$instance->db->iterate_data( $data, function( $element ) {
+				if ( empty( $element['widgetType'] ) ) {
+					return $element;
+				}
+
+				if ( 'button' === $element['widgetType'] ) {
+					$size_to_replace = [
+						'small' => 'xs',
+						'medium' => 'sm',
+						'large' => 'md',
+						'xl' => 'lg',
+						'xxl' => 'xl',
+					];
+
+					if ( ! empty( $element['settings']['size'] ) ) {
+						$old_size = $element['settings']['size'];
+
+						if ( isset( $size_to_replace[ $old_size ] ) ) {
+							$element['settings']['size'] = $size_to_replace[ $old_size ];
+						}
+					}
+				}
+
+				return $element;
+			} );
+
+			$document = Plugin::$instance->documents->get( $post_id );
+
+			$document->save( [
+				'elements' => $data,
+			] );
+		}
+	}
+
+	/**
+	 * Upgrade Elementor 2.0.0
+	 *
+	 * Fix post titles for old autosave drafts that saved with the format 'Auto Save 2018-03-18 17:24'.
+	 *
+	 * @static
+	 * @since 2.0.0
+	 * @access public
+	 */
+	public static function _v_2_0_0() {
+		global $wpdb;
+
+		$posts = $wpdb->get_results(
+			'SELECT `ID`, `post_title`, `post_parent`
+					FROM `' . $wpdb->posts . '` p
+					LEFT JOIN `' . $wpdb->postmeta . '` m ON p.ID = m.post_id
+					WHERE `post_status` = \'inherit\'
+					AND `post_title` = CONCAT(\'Auto Save \', DATE_FORMAT(post_date, "%Y-%m-%d %H:%i"))
+					AND  m.`meta_key` = \'_elementor_data\';'
+		);
+
+		if ( empty( $posts ) ) {
+			return;
+		}
+
+		foreach ( $posts as $post ) {
+			wp_update_post( [
+				'ID' => $post->ID,
+				'post_title' => get_the_title( $post->post_parent ),
+			] );
+		}
+	}
+
+	/**
+	 * Upgrade Elementor 2.0.1
+	 *
+	 * Fix post titles for old autosave drafts that saved with the format 'Auto Save...'.
+	 *
+	 * @since 2.0.2
+	 * @static
+	 * @access public
+	 */
+	public static function _v_2_0_1() {
+		global $wpdb;
+
+		$posts = $wpdb->get_results(
+			'SELECT `ID`, `post_title`, `post_parent`
+					FROM `' . $wpdb->posts . '` p
+					LEFT JOIN `' . $wpdb->postmeta . '` m ON p.ID = m.post_id
+					WHERE `post_status` = \'inherit\'
+					AND `post_title` REGEXP \'^Auto Save [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}$\'
+					AND  m.`meta_key` = \'_elementor_data\';'
+		);
+
+		if ( empty( $posts ) ) {
+			return;
+		}
+
+		foreach ( $posts as $post ) {
+			$parent = get_post( $post->post_parent );
+			$title = isset( $parent->post_title ) ? $parent->post_title : '';
+
+			wp_update_post( [
+				'ID' => $post->ID,
+				'post_title' => $title,
+			] );
+		}
+	}
+
+	/**
+	 * Upgrade Elementor 2.0.10
+	 *
+	 * Fix post titles for old autosave drafts that saved with the format 'Auto Save...'.
+	 * Fix also Translated titles.
+	 *
+	 * @since 2.0.10
+	 * @static
+	 * @access public
+	 */
+	public static function _v_2_0_10() {
+		global $wpdb;
+
+		$posts = $wpdb->get_results(
+			'SELECT `ID`, `post_title`, `post_parent`
+					FROM `' . $wpdb->posts . '` p
+					LEFT JOIN `' . $wpdb->postmeta . '` m ON p.ID = m.post_id
+					WHERE `post_status` = \'inherit\'
+					AND `post_title` REGEXP \'[[:alnum:]]+ [[:alnum:]]+ [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}$\'
+					AND  m.`meta_key` = \'_elementor_data\';'
+		);
+
+		if ( empty( $posts ) ) {
+			return;
+		}
+
+		foreach ( $posts as $post ) {
+			$parent = get_post( $post->post_parent );
+			$title = isset( $parent->post_title ) ? $parent->post_title : '';
+
+			wp_update_post( [
+				'ID' => $post->ID,
+				'post_title' => $title,
+			] );
+		}
+	}
+
+	public static function _v_2_1_0() {
+		global $wpdb;
+
+		// upgrade `video` widget settings (merge providers).
+		$post_ids = $wpdb->get_col(
+			'SELECT `post_id` FROM `' . $wpdb->postmeta . '` WHERE `meta_key` = "_elementor_data" AND `meta_value` LIKE \'%"widgetType":"video"%\';'
 		);
 
 		if ( empty( $post_ids ) ) {
@@ -199,8 +346,104 @@ class Upgrades {
 
 		foreach ( $post_ids as $post_id ) {
 			$do_update = false;
+			$document = Plugin::$instance->documents->get( $post_id );
 
-			$document = Plugin::elementor()->documents->get( $post_id );
+			if ( $document ) {
+				$data = $document->get_elements_data();
+			}
+
+			if ( empty( $data ) ) {
+				continue;
+			}
+
+			$data = Plugin::$instance->db->iterate_data( $data, function( $element ) use ( &$do_update ) {
+				if ( empty( $element['widgetType'] ) || 'video' !== $element['widgetType'] ) {
+					return $element;
+				}
+
+				$replacements = [];
+
+				if ( empty( $element['settings']['video_type'] ) || 'youtube' === $element['settings']['video_type'] ) {
+					$replacements = [
+						'yt_autoplay' => 'autoplay',
+						'yt_controls' => 'controls',
+						'yt_mute' => 'mute',
+						'yt_rel' => 'rel',
+						'link' => 'youtube_url',
+					];
+				} elseif ( 'vimeo' === $element['settings']['video_type'] ) {
+					$replacements = [
+						'vimeo_autoplay' => 'autoplay',
+						'vimeo_loop' => 'loop',
+						'vimeo_color' => 'color',
+						'vimeo_link' => 'vimeo_url',
+					];
+				}
+
+				// cleanup old unused settings.
+				unset( $element['settings']['yt_rel_videos'] );
+
+				foreach ( $replacements as $old => $new ) {
+					if ( ! empty( $element['settings'][ $old ] ) ) {
+						$element['settings'][ $new ] = $element['settings'][ $old ];
+						$do_update = true;
+					}
+				}
+
+				return $element;
+			} );
+
+			// Only update if needed.
+			if ( ! $do_update ) {
+				continue;
+			}
+
+			// We need the `wp_slash` in order to avoid the unslashing during the `update_post_meta`
+			$json_value = wp_slash( wp_json_encode( $data ) );
+
+			update_metadata( 'post', $post_id, '_elementor_data', $json_value );
+
+			// Clear WP cache for next step.
+			wp_cache_flush();
+		} // End foreach().
+	}
+
+	/**
+	 * @param Updater $updater
+	 *
+	 * @return bool
+	 */
+	public static function _v_2_3_0_widget_image( $updater ) {
+		global $wpdb;
+
+		// upgrade `video` widget settings (merge providers).
+		$post_ids = $updater->query_col(
+			'SELECT `post_id` FROM `' . $wpdb->postmeta . '` WHERE `meta_key` = "_elementor_data" AND (
+			`meta_value` LIKE \'%"widgetType":"image"%\'
+			OR `meta_value` LIKE \'%"widgetType":"theme-post-featured-image"%\'
+			OR `meta_value` LIKE \'%"widgetType":"theme-site-logo"%\'
+			OR `meta_value` LIKE \'%"widgetType":"woocommerce-category-image"%\'
+			);'
+		);
+
+		if ( empty( $post_ids ) ) {
+			return false;
+		}
+
+		$widgets = [
+			'image',
+			'theme-post-featured-image',
+			'theme-site-logo',
+			'woocommerce-category-image',
+		];
+
+		foreach ( $post_ids as $post_id ) {
+			// Clear WP cache for next step.
+			wp_cache_flush();
+
+			$do_update = false;
+
+			$document = Plugin::$instance->documents->get( $post_id );
 
 			if ( ! $document ) {
 				continue;
@@ -212,315 +455,34 @@ class Upgrades {
 				continue;
 			}
 
-			$data = Plugin::elementor()->db->iterate_data( $data, function( $element ) use ( &$do_update ) {
-				if ( empty( $element['elType'] ) || 'section' !== $element['elType'] ) {
+			$data = Plugin::$instance->db->iterate_data( $data, function( $element ) use ( &$do_update, $widgets ) {
+				if ( empty( $element['widgetType'] ) || ! in_array( $element['widgetType'], $widgets ) ) {
 					return $element;
 				}
 
-				if ( ! empty( $element['settings']['sticky'] ) && 'yes' === $element['settings']['sticky'] ) {
-					$element['settings']['sticky'] = 'top';
-					$do_update = true;
+				if ( ! empty( $element['settings']['caption'] ) ) {
+					if ( ! isset( $element['settings']['caption_source'] ) ) {
+						$element['settings']['caption_source'] = 'custom';
+
+						$do_update = true;
+					}
 				}
 
 				return $element;
 			} );
 
+			// Only update if needed.
 			if ( ! $do_update ) {
 				continue;
 			}
-			// We need the `wp_slash` in order to avoid the unslashing during the `update_metadata`
+
+			// We need the `wp_slash` in order to avoid the unslashing during the `update_post_meta`
 			$json_value = wp_slash( wp_json_encode( $data ) );
 
 			update_metadata( 'post', $post_id, '_elementor_data', $json_value );
 		} // End foreach().
-	}
 
-	private static function save_editor( $post_id, $posted ) {
-		// Change the global post to current library post, so widgets can use `get_the_ID` and other post data
-		if ( isset( $GLOBALS['post'] ) ) {
-			$global_post = $GLOBALS['post'];
-		}
-		$GLOBALS['post'] = get_post( $post_id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-
-		$editor_data = self::get_editor_data( $posted );
-
-		// We need the `wp_slash` in order to avoid the unslashing during the `update_post_meta`
-		$json_value = wp_slash( wp_json_encode( $editor_data ) );
-
-		$is_meta_updated = update_metadata( 'post', $post_id, '_elementor_data', $json_value );
-
-		if ( $is_meta_updated ) {
-			Revisions_Manager::handle_revision();
-		}
-
-		// Restore global post
-		if ( isset( $global_post ) ) {
-			$GLOBALS['post'] = $global_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-		} else {
-			unset( $GLOBALS['post'] );
-		}
-
-		/**
-		 * After editor saves data.
-		 *
-		 * Fires after Elementor editor data was saved.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param int   $post_id     The ID of the post.
-		 * @param array $editor_data The editor data.
-		 */
-		do_action( 'elementor/editor/after_save', $post_id, $editor_data );
-	}
-
-	private static function get_editor_data( $data, $with_html_content = false ) {
-		$editor_data = [];
-
-		foreach ( $data as $element_data ) {
-			$element = Plugin::elementor()->elements_manager->create_element_instance( $element_data );
-
-			if ( ! $element ) {
-				continue;
-			}
-
-			$editor_data[] = $element->get_raw_data( $with_html_content );
-		} // End Section
-
-		return $editor_data;
-	}
-
-	public static function _v_2_5_0_form( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_rename_repeater_settings' ],
-				'control_ids' => [
-					'form_fields' => [
-						'_id' => 'custom_id',
-					],
-				],
-			],
-		];
-
-		return self::_update_widget_settings( 'form', $updater, $changes );
-	}
-
-	public static function _v_2_5_0_woocommerce_menu_cart( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_rename_widget_settings' ],
-				'control_ids' => [
-					'checkout_button_border_color' => 'checkout_border_color',
-					'view_cart_button_border_color' => 'view_cart_border_color',
-				],
-			],
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_slider_to_border_settings' ],
-				'control_ids' => [
-					'checkout_button_border_width' => [
-						'new' => 'checkout_border_width',
-						'add' => 'checkout_border_border',
-					],
-					'view_cart_button_border_width' => [
-						'new' => 'view_cart_border_width',
-						'add' => 'view_cart_border_border',
-					],
-				],
-			],
-		];
-
-		return self::_update_widget_settings( 'woocommerce-menu-cart', $updater, $changes );
-	}
-
-	public static function _v_3_7_2_woocommerce_rename_related_to_related_products( $updater ) {
-		$changes = self::get_woocommerce_rename_related_to_related_products_changes();
-
-		return self::_update_widget_settings( 'woocommerce-products', $updater, $changes );
-	}
-
-	public static function _slider_to_border_settings( $element, $args ) {
-		$widget_id = $args['widget_id'];
-		$changes = $args['control_ids'];
-
-		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		foreach ( $changes as $old => $new ) {
-			if ( ! empty( $element['settings'][ $old ] ) && ! isset( $element['settings'][ $new['new'] ] ) ) {
-				$new_border_width = [
-					'unit' => $element['settings'][ $old ]['unit'],
-					'top' => $element['settings'][ $old ]['size'],
-					'bottom' => $element['settings'][ $old ]['size'],
-					'left' => $element['settings'][ $old ]['size'],
-					'right' => $element['settings'][ $old ]['size'],
-					'isLinked' => true,
-				];
-				$element['settings'][ $new ['new'] ] = $new_border_width;
-				$element['settings'][ $new ['add'] ] = 'solid';
-				$args['do_update'] = true;
-			}
-		}
-		return $element;
-	}
-
-	/**
-	 * @param $element
-	 * @param $args
-	 *
-	 * @return mixed
-	 */
-	public static function _rename_repeater_settings( $element, $args ) {
-		$widget_id = $args['widget_id'];
-		$changes = $args['control_ids'];
-
-		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		foreach ( $changes as $change_key => $change ) {
-			foreach ( $change as $old => $new ) {
-				foreach ( $element['settings'][ $change_key ] as &$repeater ) {
-					if ( ! empty( $repeater[ $old ] ) && ! isset( $repeater[ $new ] ) ) {
-						$repeater[ $new ] = $repeater[ $old ];
-						$args['do_update'] = true;
-					}
-				}
-			}
-		}
-
-		return $element;
-	}
-
-	private static function taxonomies_mapping( $prefix, $map_to ) {
-		$taxonomy_filter_args = [
-			'show_in_nav_menus' => true,
-		];
-
-		$taxonomies = get_taxonomies( $taxonomy_filter_args );
-
-		$mapping = [];
-
-		foreach ( $taxonomies as $taxonomy ) {
-			$mapping[ $prefix . $taxonomy . '_ids' ] = $map_to;
-		}
-
-		return $mapping;
-	}
-
-	public static function _v_2_5_0_posts( $updater ) {
-		$add_taxonomies = self::taxonomies_mapping( 'posts_', [ 'posts_include' => 'terms' ] );
-		$merge_taxonomies = self::taxonomies_mapping( 'posts_', 'posts_include_term_ids' );
-
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_rename_widget_settings' ],
-				'control_ids' => [
-					'orderby' => 'posts_orderby',
-					'order' => 'posts_order',
-					'offset' => 'posts_offset',
-					'exclude' => 'posts_exclude',
-					'exclude_ids' => 'posts_exclude_ids',
-					'posts_query_id' => 'posts_posts_query_id',
-					'avoid_duplicates' => 'posts_avoid_duplicates',
-					'posts_authors' => 'posts_include_authors',
-				],
-			],
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_add_widget_settings_to_array' ],
-				'control_ids' => array_merge( $add_taxonomies, [
-					'posts_authors' => [ 'posts_include' => 'authors' ],
-				] ),
-			],
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_merge_widget_settings' ],
-				'control_ids' => $merge_taxonomies,
-			],
-		];
-
-		return self::_update_widget_settings( 'posts', $updater, $changes );
-	}
-
-	public static function _v_2_5_0_portfolio( $updater ) {
-		$add_taxonomies = self::taxonomies_mapping( 'posts_', [ 'posts_include' => 'terms' ] );
-		$merge_taxonomies = self::taxonomies_mapping( 'posts_', 'posts_include_term_ids' );
-
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_rename_widget_settings' ],
-				'control_ids' => [
-					'orderby' => 'posts_orderby',
-					'order' => 'posts_order',
-					'offset' => 'posts_offset',
-					'exclude' => 'posts_exclude',
-					'exclude_ids' => 'posts_exclude_ids',
-					'posts_query_id' => 'posts_posts_query_id',
-					'avoid_duplicates' => 'posts_avoid_duplicates',
-					'posts_authors' => 'posts_include_authors',
-				],
-			],
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_add_widget_settings_to_array' ],
-				'control_ids' => array_merge( $add_taxonomies, [
-					'posts_authors' => [ 'posts_include' => 'authors' ],
-				] ),
-			],
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_merge_widget_settings' ],
-				'control_ids' => $merge_taxonomies,
-			],
-		];
-
-		return self::_update_widget_settings( 'portfolio', $updater, $changes );
-	}
-
-	public static function _v_2_5_0_products( $updater ) {
-		$add_taxonomies = self::taxonomies_mapping( 'query_', [ 'query_include' => 'terms' ] );
-		$merge_taxonomies = self::taxonomies_mapping( 'query_', 'query_include_term_ids' );
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_rename_widget_settings' ],
-				'control_ids' => [
-					'orderby' => 'query_orderby',
-					'order' => 'query_order',
-					'exclude' => 'query_exclude',
-					'exclude_ids' => 'query_exclude_ids',
-					'query_authors' => 'query_include_authors',
-					'query_product_tag_ids' => 'query_include_term_ids',
-					'query_product_cat_ids' => 'query_include_term_ids',
-				],
-			],
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_add_widget_settings_to_array' ],
-				'control_ids' => array_merge( $add_taxonomies, [
-					'query_authors' => [ 'query_include' => 'authors' ],
-				] ),
-			],
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_merge_widget_settings' ],
-				'control_ids' => $merge_taxonomies,
-			],
-		];
-
-		return self::_update_widget_settings( 'woocommerce-products', $updater, $changes );
-	}
-
-	/**
-	 * @param $updater
-	 *
-	 * @return bool Should run again.
-	 */
-	public static function _v_2_5_0_sitemap( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_rename_widget_settings' ],
-				'control_ids' => [
-					'exclude' => 'sitemap_exclude',
-					'exclude_ids' => 'sitemap_exclude_ids',
-				],
-			],
-		];
-
-		return self::_update_widget_settings( 'sitemap', $updater, $changes );
+		return $updater->should_run_again( $post_ids );
 	}
 
 	/**
@@ -528,17 +490,15 @@ class Upgrades {
 	 *
 	 * @return bool
 	 */
-	public static function _v_2_5_0_popup_border_radius( $updater ) {
+	public static function _v_2_3_0_template_type( $updater ) {
 		global $wpdb;
 
 		$post_ids = $updater->query_col(
-			"SELECT pm1.post_id
-					FROM {$wpdb->postmeta} AS pm1
-					LEFT JOIN {$wpdb->postmeta} AS pm2 ON (pm1.post_id = pm2.post_id)
-					WHERE pm1.meta_key = '_elementor_template_type'
-					AND pm1.meta_value = 'popup'
-					AND pm2.`meta_key` = '" . Document::PAGE_META_KEY . "'
-					AND pm2.`meta_value` LIKE '%border_radius%';"
+			'SELECT p.ID
+					FROM `' . $wpdb->posts . '` AS p
+					LEFT JOIN `' . $wpdb->postmeta . '` AS pm1 ON (p.ID = pm1.post_id)
+					LEFT JOIN `' . $wpdb->postmeta . '` AS pm2 ON (pm1.post_id = pm2.post_id AND pm2.meta_key = "_elementor_template_type")
+					WHERE p.post_status != "inherit" AND pm1.`meta_key` = "_elementor_data" AND pm2.post_id IS NULL;'
 		);
 
 		if ( empty( $post_ids ) ) {
@@ -547,674 +507,507 @@ class Upgrades {
 
 		foreach ( $post_ids as $post_id ) {
 			// Clear WP cache for next step.
-			$document = Plugin::elementor()->documents->get( $post_id );
+			wp_cache_flush();
+
+			$document = Plugin::$instance->documents->get( $post_id );
 
 			if ( ! $document ) {
 				continue;
 			}
 
-			$page_settings = $document->get_settings();
-
-			// Check if there isn't 'border_radius' setting or if it has already been upgraded
-			if ( empty( $page_settings['border_radius']['size'] ) ) {
-				continue;
-			}
-
-			$border_radius = $page_settings['border_radius'];
-
-			$new_border_radius = [
-				'unit' => $border_radius['unit'],
-				'top' => $border_radius['size'],
-				'bottom' => $border_radius['size'],
-				'left' => $border_radius['size'],
-				'right' => $border_radius['size'],
-				'isLinked' => true,
-			];
-
-			$page_settings['border_radius'] = $new_border_radius;
-
-			// TODO: `$document->update_settings`.
-			$document->update_meta( Document::PAGE_META_KEY, $page_settings );
-
-			wp_cache_flush();
+			$document->save_template_type();
 		} // End foreach().
 
 		return $updater->should_run_again( $post_ids );
 	}
 
-	public static function _v_2_5_4_posts( $updater ) {
-		$merge_taxonomies = self::taxonomies_mapping( 'posts_', 'posts_include_term_ids' );
-
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_convert_term_id_to_term_taxonomy_id' ],
-				'control_ids' => $merge_taxonomies,
-				'prefix' => 'posts_',
-				'new_id' => 'include_term_ids',
-			],
-		];
-
-		return self::_update_widget_settings( 'posts', $updater, $changes );
-	}
-
-	public static function _v_2_5_4_portfolio( $updater ) {
-		$merge_taxonomies = self::taxonomies_mapping( 'posts_', 'posts_include_term_ids' );
-
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_convert_term_id_to_term_taxonomy_id' ],
-				'control_ids' => $merge_taxonomies,
-				'prefix' => 'posts_',
-				'new_id' => 'include_term_ids',
-			],
-		];
-
-		return self::_update_widget_settings( 'portfolio', $updater, $changes );
-	}
-
-	public static function _v_2_5_4_products( $updater ) {
-		$merge_taxonomies = self::taxonomies_mapping( 'query_', 'query_include_term_ids' );
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_convert_term_id_to_term_taxonomy_id' ],
-				'control_ids' => $merge_taxonomies,
-				'prefix' => 'query_',
-				'new_id' => 'include_term_ids',
-			],
-		];
-
-		return self::_update_widget_settings( 'woocommerce-products', $updater, $changes );
-	}
-
-	public static function _v_2_5_4_form( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_missing_form_custom_id_settings' ],
-				'control_ids' => [],
-			],
-		];
-
-		return self::_update_widget_settings( 'form', $updater, $changes );
-	}
-
-	public static function _v_3_1_0_media_carousel( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_convert_progress_to_progressbar' ],
-				'control_ids' => [],
-			],
-		];
-
-		return self::_update_widget_settings( 'media-carousel', $updater, $changes );
-	}
-
-	public static function _v_3_1_0_reviews( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_convert_progress_to_progressbar' ],
-				'control_ids' => [],
-			],
-		];
-
-		return self::_update_widget_settings( 'reviews', $updater, $changes );
-	}
-
-	public static function _v_3_1_0_testimonial_carousel( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_convert_progress_to_progressbar' ],
-				'control_ids' => [],
-			],
-		];
-
-		return self::_update_widget_settings( 'testimonial-carousel', $updater, $changes );
-	}
-
-	public static function _v_3_1_0_slides( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_migrate_slides_button_color_settings' ],
-				'control_ids' => [],
-			],
-		];
-
-		return self::_update_widget_settings( 'slides', $updater, $changes );
-	}
-
-	public static function _v_3_3_0_nav_menu_icon( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_migrate_indicator_control_to_submenu_icon' ],
-				'control_ids' => [],
-			],
-		];
-
-		return self::_update_widget_settings( 'nav-menu', $updater, $changes );
-	}
-
-	public static function _v_3_3_0_recalc_usage_data( $updater ) {
-		return Core_Upgrades::recalc_usage_data( $updater );
-	}
-
-	public static function _v_3_5_0_price_list( $updater ) {
-		$changes = [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_copy_title_styles_to_new_price_controls' ],
-				'control_ids' => [],
-			],
-		];
-
-		return self::_update_widget_settings( 'price-list', $updater, $changes );
+	/**
+	 * Set FontAwesome Migration needed flag
+	 */
+	public static function _v_2_6_0_fa4_migration_flag() {
+		add_option( 'elementor_icon_manager_needs_update', 'yes' );
+		add_option( 'elementor_load_fa4_shim', 'yes' );
 	}
 
 	/**
-	 * $changes is an array of arrays in the following format:
-	 * [
-	 *   'control_ids' => array of control ids
-	 *   'callback' => user callback to manipulate the control_ids
-	 * ]
+	 * migrate Icon control string value to Icons control array value
 	 *
-	 * @param       $widget_id
-	 * @param       $updater
-	 * @param array $changes
+	 * @param array $element
+	 * @param array $args
+	 *
+	 * @return mixed
+	 */
+	public static function _migrate_icon_fa4_value( $element, $args ) {
+		$widget_id = $args['widget_id'];
+
+		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
+			return $element;
+		}
+		foreach ( $args['control_ids'] as $old_name => $new_name ) {
+			// exit if new value exists
+			if ( isset( $element['settings'][ $new_name ] ) ) {
+				continue;
+			}
+
+			// exit if no value to migrate
+			if ( ! isset( $element['settings'][ $old_name ] ) ) {
+				continue;
+			}
+
+			$element['settings'][ $new_name ] = Icons_Manager::fa4_to_fa5_value_migration( $element['settings'][ $old_name ] );
+			$args['do_update'] = true;
+		}
+		return $element;
+	}
+
+	/**
+	 * Set FontAwesome 5 value Migration on for button widget
+	 *
+	 * @param Updater $updater
+	 */
+	public static function _v_2_6_6_fa4_migration_button( $updater ) {
+		$changes = [
+			[
+				'callback' => [ 'Elementor\Core\Upgrade\Upgrades', '_migrate_icon_fa4_value' ],
+				'control_ids' => [
+					'icon' => 'selected_icon',
+				],
+			],
+		];
+		Upgrade_Utils::_update_widget_settings( 'button', $updater, $changes );
+		Upgrade_Utils::_update_widget_settings( 'icon-box', $updater, $changes );
+	}
+
+	/**
+	 *  Update database to separate page from post.
+	 *
+	 * @param Updater $updater
+	 *
+	 * @param string $type
 	 *
 	 * @return bool
 	 */
-	public static function _update_widget_settings( $widget_id, $updater, $changes ) {
+	public static function rename_document_base_to_wp( $updater, $type ) {
 		global $wpdb;
 
-		$post_ids = $updater->query_col(
-			'SELECT `post_id`
-					FROM `' . $wpdb->postmeta . '`
-					WHERE `meta_key` = "_elementor_data"
-					AND `meta_value` LIKE \'%"widgetType":"' . $widget_id . '"%\';'
+		$post_ids = $updater->query_col( $wpdb->prepare(
+			"SELECT p1.ID FROM {$wpdb->posts} AS p
+					LEFT JOIN {$wpdb->posts} AS p1 ON (p.ID = p1.post_parent || p.ID = p1.ID)
+					WHERE p.post_type = %s;", $type ) );
+
+		if ( empty( $post_ids ) ) {
+			return false;
+		}
+
+		$sql_post_ids = implode( ',', $post_ids );
+
+		$wpdb->query( $wpdb->prepare(
+			"UPDATE $wpdb->postmeta SET meta_value = %s
+			WHERE meta_key = '_elementor_template_type' && post_id in ( %s );
+		 ", 'wp-' . $type, $sql_post_ids ) );
+
+		return $updater->should_run_again( $post_ids );
+	}
+
+	/**
+	 *  Update database to separate page from post.
+	 *
+	 * @param Updater $updater
+	 *
+	 * @return bool
+	 */
+	// Because the query is slow on large sites, temporary don't upgrade.
+	/*	public static function _v_2_7_0_rename_document_types_to_wp( $updater ) {
+		return self::rename_document_base_to_wp( $updater, 'post' ) || self::rename_document_base_to_wp( $updater, 'page' );
+	}*/
+
+	// Upgrade code was fixed & moved to _v_2_7_1_remove_old_usage_data.
+	/* public static function _v_2_7_0_remove_old_usage_data() {} */
+
+	// Upgrade code moved to _v_2_7_1_recalc_usage_data.
+	/* public static function _v_2_7_0_recalc_usage_data( $updater ) {} */
+
+	/**
+	 * Don't use the old data anymore.
+	 * Since 2.7.1 the key was changed from `elementor_elements_usage` to `elementor_controls_usage`.
+	 */
+	public static function _v_2_7_1_remove_old_usage_data() {
+		delete_option( 'elementor_elements_usage' );
+		delete_post_meta_by_key( '_elementor_elements_usage' );
+	}
+
+	/**
+	 * Recalc usage.
+	 *
+	 * @param Updater $updater
+	 *
+	 * @return bool
+	 */
+	public static function recalc_usage_data( $updater ) {
+		if ( ! Tracker::is_allow_track() ) {
+			return false;
+		}
+
+		/** @var Module $module */
+		$module = Plugin::$instance->modules_manager->get_modules( 'usage' );
+
+		$post_count = $module->recalc_usage( $updater->get_limit(), $updater->get_current_offset() );
+
+		return ( $post_count === $updater->get_limit() );
+	}
+
+	public static function _v_2_7_1_recalc_usage_data( $updater ) {
+		return self::recalc_usage_data( $updater );
+	}
+
+	public static function _v_2_8_3_recalc_usage_data( $updater ) {
+		// Re-calc since older version(s) had invalid values.
+		return self::recalc_usage_data( $updater );
+	}
+
+	/**
+	 * Move general & lightbox settings to active kit and all it's revisions.
+	 *
+	 * @param Updater $updater
+	 *
+	 * @return bool
+	 */
+	public static function _v_3_0_0_move_general_settings_to_kit( $updater ) {
+		$callback = function( $kit_id ) {
+			$kit = Plugin::$instance->documents->get( $kit_id );
+
+			if ( ! $kit ) {
+				self::notice( 'Kit not found. nothing to do.' );
+				return;
+			}
+
+			$meta_key = SettingsPageManager::META_KEY;
+			$current_settings = get_option( '_elementor_general_settings', [] );
+			// Take the `space_between_widgets` from the option due to a bug on E < 3.0.0 that the value `0` is stored separated.
+			$current_settings['space_between_widgets'] = get_option( 'elementor_space_between_widgets', '' );
+			$current_settings[ Breakpoints_Manager::BREAKPOINT_SETTING_PREFIX . 'md' ] = get_option( 'elementor_viewport_md', '' );
+			$current_settings[ Breakpoints_Manager::BREAKPOINT_SETTING_PREFIX . 'lg' ] = get_option( 'elementor_viewport_lg', '' );
+
+			$kit_settings = $kit->get_meta( $meta_key );
+
+			// Already exist.
+			if ( isset( $kit_settings['default_generic_fonts'] ) ) {
+				self::notice( 'General Settings already exist. nothing to do.' );
+				return;
+			}
+
+			if ( empty( $current_settings ) ) {
+				self::notice( 'Current settings are empty. nothing to do.' );
+				return;
+			}
+
+			if ( ! $kit_settings ) {
+				$kit_settings = [];
+			}
+
+			// Convert some setting to Elementor slider format.
+			$settings_to_slider = [
+				'container_width',
+				'space_between_widgets',
+			];
+
+			foreach ( $settings_to_slider as $setting ) {
+				if ( isset( $current_settings[ $setting ] ) ) {
+					$current_settings[ $setting ] = [
+						'unit' => 'px',
+						'size' => $current_settings[ $setting ],
+					];
+				}
+			}
+
+			$kit_settings = array_merge( $kit_settings, $current_settings );
+
+			$page_settings_manager = SettingsManager::get_settings_managers( 'page' );
+			$page_settings_manager->save_settings( $kit_settings, $kit_id );
+		};
+
+		return self::move_settings_to_kit( $callback, $updater );
+	}
+
+	public static function _v_3_2_0_migrate_breakpoints_to_new_system( $updater, $include_revisions = true ) {
+		$callback = function( $kit_id ) {
+			$kit = Plugin::$instance->documents->get( $kit_id );
+
+			$kit_settings = $kit->get_meta( SettingsPageManager::META_KEY );
+
+			if ( ! $kit_settings ) {
+				// Nothing to upgrade.
+				return;
+			}
+
+			$prefix = Breakpoints_Manager::BREAKPOINT_SETTING_PREFIX;
+			$old_mobile_option_key = $prefix . 'md';
+			$old_tablet_option_key = $prefix . 'lg';
+
+			$breakpoint_values = [
+				$old_mobile_option_key => Plugin::$instance->kits_manager->get_current_settings( $old_mobile_option_key ),
+				$old_tablet_option_key => Plugin::$instance->kits_manager->get_current_settings( $old_tablet_option_key ),
+			];
+
+			// Breakpoint values are either a number, or an empty string (empty setting).
+			array_walk( $breakpoint_values, function( &$breakpoint_value, $breakpoint_key ) {
+				if ( $breakpoint_value ) {
+					// If the saved breakpoint value is a number, 1px is reduced because the new breakpoints system is
+					// based on max-width, as opposed to the old breakpoints system that worked based on min-width.
+					$breakpoint_value--;
+				}
+
+				return $breakpoint_value;
+			} );
+
+			$kit_settings[ $prefix . Breakpoints_Manager::BREAKPOINT_KEY_MOBILE ] = $breakpoint_values[ $old_mobile_option_key ];
+			$kit_settings[ $prefix . Breakpoints_Manager::BREAKPOINT_KEY_TABLET ] = $breakpoint_values[ $old_tablet_option_key ];
+
+			$page_settings_manager = SettingsManager::get_settings_managers( 'page' );
+			$page_settings_manager->save_settings( $kit_settings, $kit_id );
+		};
+
+		return self::move_settings_to_kit( $callback, $updater, $include_revisions );
+	}
+
+	public static function _v_3_4_8_fix_font_awesome_default_value_from_1_to_yes() {
+		// if `Icons_Manager::LOAD_FA4_SHIM_OPTION_KEY` value is '1', then set it to `yes`.
+		$load_fa4_shim_option = get_option( Icons_Manager::LOAD_FA4_SHIM_OPTION_KEY );
+
+		if ( '1' === $load_fa4_shim_option ) {
+			update_option( Icons_Manager::LOAD_FA4_SHIM_OPTION_KEY, 'yes' );
+		}
+	}
+
+	public static function _v_3_5_0_remove_old_elementor_scheme() {
+		global $wpdb;
+
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'elementor_scheme_%';" );
+	}
+
+	public static function _v_3_8_0_fix_php8_image_custom_size() {
+		global $wpdb;
+
+		$attachment_ids = $wpdb->get_col(
+			'SELECT `post_id` FROM `' . $wpdb->postmeta . '`
+				WHERE `meta_key` = "_wp_attachment_metadata"
+					AND (
+						`meta_value` LIKE \'%elementor_custom_%\'
+					);'
 		);
+
+		foreach ( $attachment_ids as $attachment_id ) {
+			$attachment_metadata = wp_get_attachment_metadata( $attachment_id );
+			if ( empty( $attachment_metadata['sizes'] ) || ! is_array( $attachment_metadata['sizes'] ) ) {
+				continue;
+			}
+
+			$old_attachment_metadata = $attachment_metadata;
+			foreach ( $attachment_metadata['sizes'] as $size_key => $size_value ) {
+				if ( 0 !== strpos( $size_key, 'elementor_custom_' ) ) {
+					continue;
+				}
+
+				if ( absint( $size_value['width'] ) !== $size_value['width'] ) {
+					$attachment_metadata['sizes'][ $size_key ]['width'] = (int) $size_value['width'];
+				}
+
+				if ( absint( $size_value['height'] ) !== $size_value['height'] ) {
+					$attachment_metadata['sizes'][ $size_key ]['height'] = (int) $size_value['height'];
+				}
+			}
+
+			if ( $old_attachment_metadata['sizes'] === $attachment_metadata['sizes'] ) {
+				continue;
+			}
+
+			wp_update_attachment_metadata( $attachment_id, $attachment_metadata );
+		}
+	}
+
+	public static function _v_3_16_0_container_updates( $updater ) {
+		$post_ids = self::get_post_ids_by_element_type( $updater, 'container' );
 
 		if ( empty( $post_ids ) ) {
 			return false;
 		}
 
 		foreach ( $post_ids as $post_id ) {
-			$do_update = false;
+			$document = Plugin::$instance->documents->get( $post_id );
 
-			$document = Plugin::elementor()->documents->get( $post_id );
-
-			if ( ! $document ) {
-				continue;
+			if ( $document ) {
+				$data = $document->get_elements_data();
 			}
-
-			$data = $document->get_elements_data();
 
 			if ( empty( $data ) ) {
 				continue;
 			}
 
-			// loop through callbacks & array
-			foreach ( $changes as $change ) {
-				$args = [
-					'do_update' => &$do_update,
-					'widget_id' => $widget_id,
-					'control_ids' => $change['control_ids'],
-				];
-				if ( isset( $change['prefix'] ) ) {
-					$args['prefix'] = $change['prefix'];
-					$args['new_id'] = $change['new_id'];
-				}
-				$data = Plugin::elementor()->db->iterate_data( $data, $change['callback'], $args );
-				if ( ! $do_update ) {
-					continue;
-				}
+			$data = self::iterate_containers( $data );
 
-				// We need the `wp_slash` in order to avoid the unslashing during the `update_metadata`
-				$json_value = wp_slash( wp_json_encode( $data ) );
-
-				update_metadata( 'post', $post_id, '_elementor_data', $json_value );
-			}
-		} // End foreach().
-
-		return $updater->should_run_again( $post_ids );
+			self::save_updated_document( $post_id, $data );
+		}
 	}
 
-	/**
-	 * @param $element
-	 * @param $args
-	 *
-	 * @return mixed
-	 */
-	public static function _rename_widget_settings( $element, $args ) {
-		$widget_id = $args['widget_id'];
-		$changes = $args['control_ids'];
+	public static function _v_3_17_0_site_settings_updates() {
+		$options = [ 'elementor_active_kit', 'elementor_previous_kit' ];
 
-		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
-			return $element;
+		foreach ( $options as $option_name ) {
+			self::maybe_add_gap_control_data( $option_name );
 		}
-
-		foreach ( $changes as $old => $new ) {
-			if ( ! empty( $element['settings'][ $old ] ) && ! isset( $element['settings'][ $new ] ) ) {
-				$element['settings'][ $new ] = $element['settings'][ $old ];
-				$args['do_update'] = true;
-			}
-		}
-
-		return $element;
 	}
 
+	private static function maybe_add_gap_control_data( $option_name ) {
+		$kit_id = get_option( $option_name );
 
-	/**
-	 * @param $element
-	 * @param $args
-	 *
-	 * @return mixed
-	 */
-	public static function _rename_widget_settings_value( $element, $args ) {
-		$widget_id = $args['widget_id'];
-		$changes = $args['control_ids'];
-
-		if ( self::is_widget_matched( $element, $widget_id ) ) {
-			$element = self::apply_rename( $changes, $element, $args );
+		if ( ! $kit_id ) {
+			return;
 		}
 
-		return $element;
+		$kit_data_array = get_post_meta( (int) $kit_id, '_elementor_page_settings', true );
+
+		$setting_not_exist = ! isset( $kit_data_array['space_between_widgets'] );
+		$already_processed = isset( $kit_data_array['space_between_widgets']['column'] );
+
+		if ( $setting_not_exist || $already_processed ) {
+			return;
+		}
+
+		$kit_data_array['space_between_widgets'] = Utils::update_space_between_widgets_values( $kit_data_array['space_between_widgets'] );
+
+		update_post_meta( (int) $kit_id, '_elementor_page_settings', $kit_data_array );
 	}
 
-	/**
-	 * @param $element
-	 * @param $args
-	 *
-	 * @return mixed
-	 */
-	public static function _add_widget_settings_to_array( $element, $args ) {
-		$widget_id = $args['widget_id'];
-		$changes = $args['control_ids'];
-
-		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		foreach ( $changes as $old_key => $added_key ) {
-			if ( ! empty( $element['settings'][ $old_key ] ) ) {
-				foreach ( $added_key as $control_id => $val ) {
-					if ( ! in_array( $val, $element['settings'][ $control_id ], true ) ) {
-						$element['settings'][ $control_id ][] = $val;
-						$args['do_update'] = true;
-					}
-				}
-			}
-		}
-
-		return $element;
-	}
-
-	/**
-	 * @param $element
-	 * @param $args
-	 *
-	 * @return mixed
-	 */
-	public static function _merge_widget_settings( $element, $args ) {
-		$widget_id = $args['widget_id'];
-		$changes = $args['control_ids'];
-
-		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		foreach ( $changes as $old => $new ) {
-			if ( ! empty( $element['settings'][ $old ] ) ) {
-				if ( ! isset( $element['settings'][ $new ] ) ) {
-					$element['settings'][ $new ] = $element['settings'][ $old ];
-				} else {
-					$element['settings'][ $new ] = array_unique( array_merge( $element['settings'][ $old ], $element['settings'][ $new ] ) );
-				}
-				$args['do_update'] = true;
-			}
-		}
-
-		return $element;
-	}
-
-	/**
-	 * Possible scenarios:
-	 * 1) custom_id is not empty --> do nothing
-	 * 2) Existing _id: Empty or Missing custom_id --> create custom_id and set the value to the value of _id
-	 * 3) Missing _id: Empty or Missing custom_id --> generate a unique key and set it as custom_id value
-	 * @param $element
-	 * @param $args
-	 *
-	 * @return mixed
-	 */
-	public static function _missing_form_custom_id_settings( $element, $args ) {
-		$widget_id = $args['widget_id'];
-
-		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		$random_id = (int) substr( time(), -5 );
-		//form_fields loop:
-		foreach ( $element['settings']['form_fields'] as &$repeater_item ) {
-			if ( ! empty( $repeater_item['custom_id'] ) ) { // Scenario 1
-				continue;
-			}
-
-			if ( ! empty( $repeater_item['_id'] ) ) { // Scenario 2
-				$repeater_item['custom_id'] = $repeater_item['_id'];
-			} else { // Scenario 3
-				$repeater_item['custom_id'] = 'field_' . $random_id;
-				$random_id++;
-			}
-
-			$args['do_update'] = true;
-		}
-
-		return $element;
-	}
-
-	/**
-	 * Migrates the value saved for the 'indicator' SELECT control in the Nav Menu Widget to the new replacement
-	 * 'submenu_icon' ICONS control.
-	 *
-	 * @param $element
-	 * @param $args
-	 *
-	 * @return mixed;
-	 */
-	public static function _migrate_indicator_control_to_submenu_icon( $element, $args ) {
-		$widget_id = $args['widget_id'];
-
-		// If the current element is not a Nav Menu widget, go to the next one.
-		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		// If this Nav Menu widget's 'indicator' control value is the default one (there is no value in the DB),
-		// there is nothing to migrate, since the default icon is identical in the new control. Go to the next element.
-		if ( ! isset( $element['settings']['indicator'] ) ) {
-			return $element;
-		}
-
-		$new_value = '';
-		$new_library = 'fa-solid';
-
-		switch ( $element['settings']['indicator'] ) {
-			case 'none':
-				$new_library = '';
-				break;
-			case 'classic':
-				$new_value = 'fa-caret-down';
-				break;
-			case 'chevron':
-				$new_value = 'fa-chevron-down';
-				break;
-			case 'angle':
-				$new_value = 'fa-angle-down';
-				break;
-			case 'plus':
-				$new_value = 'e-plus-icon';
-				$new_library = '';
-				break;
-		}
-
-		// This is done in order to make sure that the menu will not look any different for users who upgrade.
-		// The 'None' option should be completely empty.
-		if ( $new_value ) {
-			if ( Icons_Manager::is_migration_allowed() ) {
-				// If the site has been migrated to FA5, add the new FA Solid class.
-				$new_value = 'fas ' . $new_value;
-			} else {
-				// If the site has not been migrated, add the old generic 'fa' class.
-				$new_value = 'fa ' . $new_value;
-			}
-		}
-
-		// Set the migrated value for the new control.
-		$element['settings']['submenu_icon'] = [
-			'value' => $new_value,
-			'library' => $new_library,
-		];
-
-		$args['do_update'] = true;
-
-		return $element;
-	}
-
-	/**
-	 * @param $element
-	 * @param $args
-	 *
-	 * @return mixed
-	 */
-	public static function _convert_term_id_to_term_taxonomy_id( $element, $args ) {
-		$widget_id = $args['widget_id'];
-		$changes = $args['control_ids'];
-		$prefix = $args['prefix'];
-		$new_id = $prefix . $args['new_id'];
-
-		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		// Exit if new is empty (should not happen)
-		if ( empty( $element['settings'][ $new_id ] ) ) {
-			return $element;
-		}
-
-		// 1) Convert each term-id to the equivalent term_taxonomy_id
-		$term_taxonomy_ids = [];
-		$old_term_ids = [];
-		foreach ( $changes as $old => $new ) {
-			if ( ! empty( $element['settings'][ $old ] ) ) {
-				$start = strlen( $prefix );
-				$end = -strlen( '_ids' );
-				$taxonomy = substr( $old, $start, $end );
-				foreach ( $element['settings'][ $old ] as $term_id ) {
-					$old_term_ids[] = $term_id;
-					$term_obj = get_term( $term_id, $taxonomy, OBJECT );
-					if ( $term_obj && ! is_wp_error( $term_obj ) ) {
-						$term_taxonomy_ids[] = $term_obj->term_taxonomy_id;
-					}
-				}
-			}
-		}
-
-		// 2) Check if the widget's settings were changed after the u/g to 2.5.0
-		$diff = array_diff( $element['settings'][ $new_id ], array_unique( $old_term_ids ) );
-		if ( empty( $diff ) ) { // Nothing was changed
-			$element['settings'][ $new_id . '_backup' ] = $element['settings'][ $new_id ];
-			$element['settings'][ $new_id ] = $term_taxonomy_ids;
-			$args['do_update'] = true;
-		}
-
-		return $element;
-	}
-
-	/**
-	 * Convert 'progress' to 'progressbar'
-	 *
-	 * Before Elementor 2.2.0, the progress bar option key was 'progress'. In Elementor 2.2.0,
-	 * it was changed to 'progressbar'. This upgrade script migrated the DB data for old websites using 'progress'.
-	 *
-	 * @param $element
-	 * @param $args
-	 * @return mixed
-	 */
-	public static function _convert_progress_to_progressbar( $element, $args ) {
-		$widget_id = $args['widget_id'];
-
-		if ( empty( $element['widgetType'] ) || $widget_id !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		if ( 'progress' === $element['settings']['pagination'] ) {
-			$element['settings']['pagination'] = 'progressbar';
-			$args['do_update'] = true;
-		}
-
-		return $element;
-	}
-
-	/**
-	 * Migrate Slides Button Color Settings
-	 *
-	 * Move Slides Widget's 'button_color' settings to 'button_text_color' and 'button_border_color' as necessary,
-	 * to allow for removing the redundant control.
-	 *
-	 * @param $element
-	 * @param $args
-	 * @return mixed
-	 */
-	public static function _migrate_slides_button_color_settings( $element, $args ) {
-		if ( empty( $element['widgetType'] ) || $args['widget_id'] !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		// If the element doesn't use the 'button_color' control, no need to do anything.
-		if ( ! isset( $element['settings']['button_color'] ) ) {
-			return $element;
-		}
-
-		// Check if button_text_color is set. If it is not set, transfer the value from button_color to button_text_color.
-		if ( ! isset( $element['settings']['button_text_color'] ) ) {
-			$element['settings']['button_text_color'] = $element['settings']['button_color'];
-			$args['do_update'] = true;
-		}
-
-		// Check if button_border_color is set. If it is not set, transfer the value from button_color to button_border_color.
-		if ( ! isset( $element['settings']['button_border_color'] ) ) {
-			$element['settings']['button_border_color'] = $element['settings']['button_color'];
-			$args['do_update'] = true;
-		}
-
-		return $element;
-	}
-
-	/**
-	 * Copy Title Styles to New Price Controls
-	 *
-	 * Copy the values from the  Price List widget's Title Style controls to new Price Style controls.
-	 *
-	 * @param $element
-	 * @param $args
-	 * @return mixed
-	 * @since 3.4.0
-	 *
-	 */
-	public static function _copy_title_styles_to_new_price_controls( $element, $args ) {
-		if ( empty( $element['widgetType'] ) || $args['widget_id'] !== $element['widgetType'] ) {
-			return $element;
-		}
-
-		if ( ! empty( $element['settings']['heading_color'] ) ) {
-			$element['settings']['price_color'] = $element['settings']['heading_color'];
-
-			$args['do_update'] = true;
-		}
-
-		$old_control_prefix = 'heading_typography_';
-		$new_control_prefix = 'price_typography_';
-
-		foreach ( self::$typography_control_names as $control_name ) {
-			if ( ! empty( $element['settings'][ $old_control_prefix . $control_name ] ) ) {
-				$element['settings'][ $new_control_prefix . $control_name ] = $element['settings'][ $old_control_prefix . $control_name ];
-
-				$args['do_update'] = true;
-			}
-		}
-
-		return $element;
-	}
-
-	public static function _remove_remote_info_api_data() {
+	public static function remove_remote_info_api_data() {
 		global $wpdb;
 
-		$key = API::TRANSIENT_KEY_PREFIX;
+		$key = Api::TRANSIENT_KEY_PREFIX;
 
-		return $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '{$key}%';"); // phpcs:ignore
+		return $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '{$key}%';" ); // phpcs:ignore
 	}
 
 	/**
-	 * @param $element
-	 * @param $to
-	 * @param $control_id
-	 * @param $args
-	 * @return array
+	 * @param callback $callback
+	 * @param Updater  $updater
+	 *
+	 * @param bool     $include_revisions
+	 *
+	 * @return mixed
 	 */
-	protected static function set_new_value( $element, $to, $control_id, $args ) {
-		$element['settings'][ $control_id ] = $to;
-		$args['do_update'] = true;
-		return $element;
-	}
-
-	/**  *
-	 * @param $change
-	 * @param array $element
-	 * @param $args
-	 * @return array
-	 */
-	protected static function replace_value_if_found( $change, array $element, $args ) {
-		$control_id = key( $args['control_ids'] );
-		$from = $change['from'];
-		$to = $change['to'];
-		if ( self::is_control_exist_in_settings( $element, $control_id ) && self::is_need_to_replace_value( $element, $control_id, $from ) ) {
-			$element = self::set_new_value( $element, $to, $control_id, $args );
+	private static function move_settings_to_kit( $callback, $updater, $include_revisions = true ) {
+		$active_kit_id = Plugin::$instance->kits_manager->get_active_id();
+		if ( ! $active_kit_id ) {
+			self::notice( 'Active kit not found. nothing to do.' );
+			return false;
 		}
-		return $element;
+
+		$offset = $updater->get_current_offset();
+
+		// On first iteration apply on active kit itself.
+		// (don't include it with revisions in order to avoid offset/iteration count wrong numbers)
+		if ( 0 === $offset ) {
+			$callback( $active_kit_id );
+		}
+
+		if ( ! $include_revisions ) {
+			return false;
+		}
+
+		$revisions_ids = wp_get_post_revisions( $active_kit_id, [
+			'fields' => 'ids',
+			'posts_per_page' => $updater->get_limit(),
+			'offset' => $offset,
+		] );
+
+		foreach ( $revisions_ids as $revision_id ) {
+			$callback( $revision_id );
+		}
+
+		return $updater->should_run_again( $revisions_ids );
+	}
+
+	private static function notice( $message ) {
+		$logger = Plugin::$instance->logger->get_logger();
+		$logger->notice( $message );
 	}
 
 	/**
-	 * @param $element
-	 * @param $widget_id
-	 * @return bool
+	 * @param \wpdb $wpdb
+	 * @param string $element_type
+	 *
+	 * @return array
 	 */
-	protected static function is_widget_matched( $element, $widget_id ) {
-		return ! empty( $element['widgetType'] ) && $widget_id === $element['widgetType'];
-	}
+	public static function get_post_ids_by_element_type( $updater, string $element_type ): array {
+		global $wpdb;
 
+		return $updater->query_col(
+			'SELECT `post_id`
+					FROM `' . $wpdb->postmeta . '`
+					WHERE `meta_key` = "_elementor_data"
+					AND `meta_value` LIKE \'%"elType":"' . $element_type . '"%\';'
+		);
+	}
 	/**
-	 * @param $changes
-	 * @param $element
-	 * @param $args
+	 * @param $data
+	 *
 	 * @return array|mixed
 	 */
-	protected static function apply_rename( $changes, $element, $args ) {
-		foreach ( $changes as $change ) {
-			$element = self::replace_value_if_found( $change, $element, $args );
+	private static function iterate_containers( $data ) {
+		return Plugin::$instance->db->iterate_data(
+			$data, function ( $element ) {
+
+				if ( 'container' !== $element['elType'] || ! isset( $element['elements'] ) ) {
+					return $element;
+				}
+
+				$element = self::maybe_convert_to_inner_container( $element );
+				$element = self::maybe_convert_to_grid_container( $element );
+				return Container::slider_to_gaps_converter( $element );
+			}
+		);
+	}
+
+	/**
+	 * @param $element
+	 *
+	 * @return array
+	 */
+	private static function maybe_convert_to_inner_container( $element ) {
+		foreach ( $element['elements'] as &$inner_element ) {
+			if ( 'container' === $inner_element['elType'] && ! $inner_element['isInner'] ) {
+				$inner_element['isInner'] = true;
+			}
 		}
+
 		return $element;
 	}
 
 	/**
 	 * @param $element
-	 * @param $control_id
-	 * @return bool
+	 *
+	 * @return array
 	 */
-	protected static function is_control_exist_in_settings( $element, $control_id ) {
-		return ! empty( $element['settings'][ $control_id ] );
+	private static function maybe_convert_to_grid_container( $element ) {
+		$is_grid_container = isset( $element['settings']['container_type'] ) && 'grid' === $element['settings']['container_type'];
+		if ( 'container' !== $element['elType'] || empty( $element['settings'] ) || ! $is_grid_container ) {
+			return $element;
+		}
+
+		$element['settings']['presetTitle'] = 'Grid';
+		$element['settings']['presetIcon'] = 'eicon-container-grid';
+
+		return $element;
 	}
 
 	/**
-	 * @param $element
-	 * @param $new
-	 * @return bool
+	 * @param $post_id
+	 * @param $data
+	 *
+	 * @return void
 	 */
-	protected static function is_need_to_replace_value( $element, $control_id, $value_to_replace ) {
-		return $element['settings'][ $control_id ] === $value_to_replace;
-	}
+	private static function save_updated_document( $post_id, $data ) {
+		$json_value = wp_slash( wp_json_encode( $data ) );
 
-	/**
-	 * @return array[]
-	 */
-	public static function get_woocommerce_rename_related_to_related_products_changes() {
-		return [
-			[
-				'callback' => [ 'ElementorPro\Core\Upgrade\Upgrades', '_rename_widget_settings_value' ],
-				'control_ids' => [
-					'query_post_type' => [
-						'from' => 'related',
-						'to' => 'related_products',
-					],
-				],
-			],
-		];
+		update_metadata( 'post', $post_id, '_elementor_data', $json_value );
 	}
 }

@@ -22,7 +22,7 @@
     },
     "autoload": {
         "psr-4": {
-            "ElementorProDeps\\Psr\\Container\\": "src\/"
+            "ElementorDeps\\Psr\\Container\\": "src\/"
         }
     }
 }

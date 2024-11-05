@@ -1,26 +1,26 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Compiler;
+namespace ElementorDeps\DI\Compiler;
 
 use function chmod;
-use ElementorProDeps\DI\Definition\ArrayDefinition;
-use ElementorProDeps\DI\Definition\DecoratorDefinition;
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\EnvironmentVariableDefinition;
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\FactoryDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
-use ElementorProDeps\DI\Definition\Reference;
-use ElementorProDeps\DI\Definition\Source\DefinitionSource;
-use ElementorProDeps\DI\Definition\StringDefinition;
-use ElementorProDeps\DI\Definition\ValueDefinition;
-use ElementorProDeps\DI\DependencyException;
-use ElementorProDeps\DI\Proxy\ProxyFactory;
+use ElementorDeps\DI\Definition\ArrayDefinition;
+use ElementorDeps\DI\Definition\DecoratorDefinition;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\EnvironmentVariableDefinition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\FactoryDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\Reference;
+use ElementorDeps\DI\Definition\Source\DefinitionSource;
+use ElementorDeps\DI\Definition\StringDefinition;
+use ElementorDeps\DI\Definition\ValueDefinition;
+use ElementorDeps\DI\DependencyException;
+use ElementorDeps\DI\Proxy\ProxyFactory;
 use function dirname;
 use function file_put_contents;
 use InvalidArgumentException;
-use ElementorProDeps\Laravel\SerializableClosure\Support\ReflectionClosure;
+use ElementorDeps\Laravel\SerializableClosure\Support\ReflectionClosure;
 use function rename;
 use function sprintf;
 use function tempnam;

@@ -1,109 +1,148 @@
 <?php
-namespace ElementorPro\Core\Editor;
+namespace Elementor\Core\Editor;
 
-use Elementor\Core\Editor\Notice_Bar as Base_Notice_Bar;
-use ElementorPro\License\Admin;
-use ElementorPro\License\API as License_API;
-use ElementorPro\Plugin;
+use Elementor\Core\Base\Base_Object;
+use Elementor\Core\Common\Modules\Ajax\Module as Ajax;
+use Elementor\Core\Utils\Promotions\Filtered_Promotions_Manager;
+use Elementor\Plugin;
+use Elementor\Utils;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-class Notice_Bar extends Base_Notice_Bar {
-
-	const ELEMENTOR_PRO_EDITOR_GO_PRO_TRIAL_ABOUT_TO_EXPIRE_LICENSE_NOTICE_DISMISSED = '_elementor_pro_editor_go_pro_trial_about_to_expire_license_notice_dismissed';
-	const ELEMENTOR_PRO_EDITOR_GO_PRO_TRIAL_EXPIRED_LICENSE_NOTICE_DISMISSED = '_elementor_pro_editor_go_pro_trial_expired_license_notice_dismissed';
-	const ELEMENTOR_PRO_EDITOR_RENEW_LICENSE_NOTICE_DISMISSED = '_elementor_pro_editor_renew_license_notice_dismissed';
-	const ELEMENTOR_PRO_EDITOR_ACTIVATE_LICENSE_NOTICE_DISMISSED = '_elementor_pro_editor_activate_license_notice_dismissed';
-	const ELEMENTOR_PRO_EDITOR_RENEW_ABOUT_TO_EXPIRE_LICENSE_NOTICE_DISMISSED = '_elementor_pro_editor_renew_about_to_expire_license_notice_dismissed';
+class Notice_Bar extends Base_Object {
 
 	protected function get_init_settings() {
-		$license_data = License_API::get_license_data();
-		$license_admin = Plugin::instance()->license_admin;
-
-		if ( License_API::is_license_active() && License_API::is_licence_pro_trial() ) {
-			return [
-				'option_key' => self::ELEMENTOR_PRO_EDITOR_GO_PRO_TRIAL_ABOUT_TO_EXPIRE_LICENSE_NOTICE_DISMISSED,
-				'message' =>
-					esc_html__( 'Heads up! You are using a free trial. Want to enjoy Pro widgets & templates for a whole year?', 'elementor-pro' )
-						. sprintf( ' <a href="https://my.elementor.com/upgrade-subscription/?utm_source=editor-notice-bar&utm_medium=wp-dash&utm_campaign=pro-trial&utm_content=trial-period" target="_blank">%s</a>', esc_html__( 'Go Pro now', 'elementor-pro' ) ),
-				'action_title' => '',
-				'action_url' => '',
-				'muted_period' => 0,
-			];
-		}
-
-		if ( License_API::is_license_expired() && License_API::is_licence_pro_trial() ) {
-			return [
-				'option_key' => self::ELEMENTOR_PRO_EDITOR_GO_PRO_TRIAL_EXPIRED_LICENSE_NOTICE_DISMISSED,
-				'message' => esc_html__( 'Your trial has expired. Miss your favorite Elementor Pro features?', 'elementor-pro' )
-					. sprintf( ' <a href="https://my.elementor.com/upgrade-subscription/?utm_source=editor-notice-bar&utm_medium=wp-dash&utm_campaign=pro-trial&utm_content=trial-expired" target="_blank">%s</a>', esc_html__( 'Upgrade now', 'elementor-pro' ) ),
-				'action_title' => '',
-				'action_url' => '',
-				'muted_period' => 0,
-			];
-		}
-
-		if ( License_API::is_license_expired() ) {
-			return [
-				'option_key' => self::ELEMENTOR_PRO_EDITOR_RENEW_LICENSE_NOTICE_DISMISSED,
-				'icon' => 'eicon-lock',
-				'message' => esc_html__(
-					'Renew to unlock all Elementor Pro features',
-					'elementor-pro'
-				),
-				'action_title' => esc_html__( 'Renew now', 'elementor-pro' ),
-				'action_url' => 'https://go.elementor.com/editor-notice-bar-renew/',
-				'secondary_message' => esc_html__(
-					'Already renewed?',
-					'elementor-pro'
-				),
-				'secondary_action_title' => esc_html__( 'Reload Editor', 'elementor-pro' ),
-				'secondary_action_url' => Admin::get_url() . '&redirect-to-document=' . Plugin::elementor()->documents->get_current()->get_id(),
-				'secondary_action_target' => '_self',
-				'muted_period' => 0,
-			];
-		}
-
-		if ( ! License_API::is_license_active() ) {
-			return [
-				'option_key' => self::ELEMENTOR_PRO_EDITOR_ACTIVATE_LICENSE_NOTICE_DISMISSED,
-				'message' => esc_html__( 'Activate Your License and Get Access to Premium Elementor Templates, Support & Plugin Updates.', 'elementor-pro' ),
-				'action_title' => esc_html__( 'Connect & Activate', 'elementor-pro' ),
-				'action_url' => $license_admin->get_connect_url( [
-					'mode' => 'popup',
-					'callback_id' => 'editor-pro-activate',
-
-					// UTM
-					'utm_source' => 'editor-notice-bar',
-					'utm_medium' => 'wp-dash',
-					'utm_campaign' => 'connect-and-activate-license',
-				] ),
-				'muted_period' => 0,
-			];
-		}
-
-		if ( ! License_API::is_license_about_to_expire() ) {
+		if ( Plugin::$instance->get_install_time() > strtotime( '-1 days' ) ) {
 			return [];
 		}
 
-		if ( isset( $license_data['renewal_discount'] ) && 0 < $license_data['renewal_discount'] ) {
-			$message = sprintf(
-				/* translators: %s: Renewal discount. */
-				esc_html__( 'Your Elementor Pro license is about to expire. Renew now and get an exclusive, time-limited %s discount.', 'elementor-pro' ),
-				$license_data['renewal_discount'] . '&#37;'
-			);
-		} else {
-			$message = esc_html__( 'Your Elementor Pro license is about to expire. Renew now and get updates, support, Pro widgets & templates for another year.', 'elementor-pro' );
-		}
+		$upgrade_url = 'https://go.elementor.com/go-pro-editor-notice-bar/';
+
+		$config = [
+			'description' => $this->get_description(),
+			'upgrade_text' => $this->get_upgrade_text(),
+			'upgrade_url' => $upgrade_url,
+		];
+
+		$config = Filtered_Promotions_Manager::get_filtered_promotion_data( $config, 'elementor/notice-bar/custom_promotion', 'upgrade_url' );
 
 		return [
-			'option_key' => self::ELEMENTOR_PRO_EDITOR_RENEW_ABOUT_TO_EXPIRE_LICENSE_NOTICE_DISMISSED,
-			'message' => $message,
-			'action_title' => esc_html__( 'Renew now', 'elementor-pro' ),
-			'action_url' => 'https://go.elementor.com/editor-notice-bar-renew/',
-			'muted_period' => 1,
+			'muted_period' => 14,
+			'option_key' => '_elementor_editor_upgrade_notice_dismissed',
+			'message' => $config['description'] ?? $this->get_description(),
+			'action_title' => $config['upgrade_text'] ?? $this->get_upgrade_text(),
+			'action_url' => $config['upgrade_url'] ?? $upgrade_url,
 		];
+	}
+
+	public function get_upgrade_text() {
+		return esc_html__( 'Upgrade Now', 'elementor' );
+	}
+
+	public function get_description() {
+		return esc_html__( 'Unleash the full power of Elementor\'s features and web creation tools.', 'elementor' );
+	}
+
+	final public function get_notice() {
+		if ( ! $this->has_access_to_notice() ) {
+			return null;
+		}
+
+		$settings = $this->get_settings();
+
+		if ( empty( $settings['option_key'] ) ) {
+			return null;
+		}
+
+		$dismissed_time = get_option( $settings['option_key'] );
+
+		if ( $dismissed_time ) {
+			if ( $dismissed_time > strtotime( '-' . $settings['muted_period'] . ' days' ) ) {
+				return null;
+			}
+
+			$this->set_notice_dismissed();
+		}
+
+		return $this;
+	}
+
+	protected function render_action( $type ) {
+		$settings = $this->get_settings();
+
+		// TODO: Make the API better. The bad naming is because of BC.
+		$prefix_map = [
+			'primary' => '',
+			'secondary' => 'secondary_',
+		];
+
+		$prefix = $prefix_map[ $type ];
+
+		$action_title = "{$prefix}action_title";
+		$action_url = "{$prefix}action_url";
+		$action_message = "{$prefix}message";
+		$action_target = "{$prefix}action_target";
+
+		if ( empty( $settings[ $action_title ] ) || empty( $settings[ $action_url ] ) || empty( $settings[ $action_message ] ) ) {
+			return;
+
+		}
+
+		?>
+		<div class="e-notice-bar__message <?php echo esc_attr( "e-notice-bar__{$type}_message" ); ?>">
+			<?php Utils::print_unescaped_internal_string( sprintf( $settings[ $action_message ], $settings[ $action_url ] ) ); ?>
+		</div>
+
+		<div class="e-notice-bar__action <?php echo esc_attr( "e-notice-bar__{$type}_action" ); ?>">
+			<a href="<?php Utils::print_unescaped_internal_string( $settings[ $action_url ] ); ?>"
+				target="<?php echo empty( $settings[ $action_target ] ) ? '_blank' : esc_attr( $settings[ $action_target ] ); ?>"
+			>
+				<?php Utils::print_unescaped_internal_string( $settings[ $action_title ] ); ?>
+			</a>
+		</div>
+		<?php
+	}
+
+	public function render() {
+		$settings = $this->get_settings();
+
+		$icon = empty( $settings['icon'] )
+			? 'eicon-elementor-square'
+			: esc_attr( $settings['icon'] );
+
+		?>
+		<div id="e-notice-bar" class="e-notice-bar">
+			<i class="e-notice-bar__icon <?php echo esc_attr( $icon ); ?>"></i>
+
+			<?php
+			$this->render_action( 'primary' );
+			$this->render_action( 'secondary' );
+			?>
+
+			<i id="e-notice-bar__close" class="e-notice-bar__close eicon-close"></i>
+		</div>
+		<?php
+	}
+
+	public function __construct() {
+		add_action( 'elementor/ajax/register_actions', [ $this, 'register_ajax_actions' ] );
+	}
+
+	public function set_notice_dismissed() {
+		if ( ! $this->has_access_to_notice() ) {
+			throw new \Exception( 'Access denied' );
+		}
+
+		update_option( $this->get_settings( 'option_key' ), time() );
+	}
+
+	public function register_ajax_actions( Ajax $ajax ) {
+		$ajax->register_ajax_action( 'notice_bar_dismiss', [ $this, 'set_notice_dismissed' ] );
+	}
+
+	private function has_access_to_notice() {
+		return current_user_can( 'manage_options' );
 	}
 }

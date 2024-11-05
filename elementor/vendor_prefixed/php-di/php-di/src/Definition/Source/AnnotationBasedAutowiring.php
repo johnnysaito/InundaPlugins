@@ -1,20 +1,20 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Source;
+namespace ElementorDeps\DI\Definition\Source;
 
-use ElementorProDeps\DI\Annotation\Inject;
-use ElementorProDeps\DI\Annotation\Injectable;
-use ElementorProDeps\DI\Definition\Exception\InvalidAnnotation;
-use ElementorProDeps\DI\Definition\ObjectDefinition;
-use ElementorProDeps\DI\Definition\ObjectDefinition\MethodInjection;
-use ElementorProDeps\DI\Definition\ObjectDefinition\PropertyInjection;
-use ElementorProDeps\DI\Definition\Reference;
-use ElementorProDeps\Doctrine\Common\Annotations\AnnotationRegistry;
-use ElementorProDeps\Doctrine\Common\Annotations\Reader;
-use ElementorProDeps\Doctrine\Common\Annotations\SimpleAnnotationReader;
+use ElementorDeps\DI\Annotation\Inject;
+use ElementorDeps\DI\Annotation\Injectable;
+use ElementorDeps\DI\Definition\Exception\InvalidAnnotation;
+use ElementorDeps\DI\Definition\ObjectDefinition;
+use ElementorDeps\DI\Definition\ObjectDefinition\MethodInjection;
+use ElementorDeps\DI\Definition\ObjectDefinition\PropertyInjection;
+use ElementorDeps\DI\Definition\Reference;
+use ElementorDeps\Doctrine\Common\Annotations\AnnotationRegistry;
+use ElementorDeps\Doctrine\Common\Annotations\Reader;
+use ElementorDeps\Doctrine\Common\Annotations\SimpleAnnotationReader;
 use InvalidArgumentException;
-use ElementorProDeps\PhpDocReader\PhpDocReader;
+use ElementorDeps\PhpDocReader\PhpDocReader;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
@@ -103,7 +103,7 @@ class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
     private function readProperty(ReflectionProperty $property, ObjectDefinition $definition, $classname = null)
     {
         // Look for @Inject annotation
-        $annotation = $this->getAnnotationReader()->getPropertyAnnotation($property, 'ElementorProDeps\\DI\\Annotation\\Inject');
+        $annotation = $this->getAnnotationReader()->getPropertyAnnotation($property, 'ElementorDeps\\DI\\Annotation\\Inject');
         if (!$annotation instanceof Inject) {
             return;
         }
@@ -146,7 +146,7 @@ class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
     {
         // Look for @Inject annotation
         try {
-            $annotation = $this->getAnnotationReader()->getMethodAnnotation($method, 'ElementorProDeps\\DI\\Annotation\\Inject');
+            $annotation = $this->getAnnotationReader()->getMethodAnnotation($method, 'ElementorDeps\\DI\\Annotation\\Inject');
         } catch (InvalidAnnotation $e) {
             throw new InvalidAnnotation(\sprintf('@Inject annotation on %s::%s is malformed. %s', $method->getDeclaringClass()->getName(), $method->getName(), $e->getMessage()), 0, $e);
         }
@@ -201,7 +201,7 @@ class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
         if ($this->annotationReader === null) {
             AnnotationRegistry::registerLoader('class_exists');
             $this->annotationReader = new SimpleAnnotationReader();
-            $this->annotationReader->addNamespace('ElementorProDeps\\DI\\Annotation');
+            $this->annotationReader->addNamespace('ElementorDeps\\DI\\Annotation');
         }
         return $this->annotationReader;
     }
@@ -219,7 +219,7 @@ class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
     {
         try {
             /** @var Injectable|null $annotation */
-            $annotation = $this->getAnnotationReader()->getClassAnnotation($class, 'ElementorProDeps\\DI\\Annotation\\Injectable');
+            $annotation = $this->getAnnotationReader()->getClassAnnotation($class, 'ElementorDeps\\DI\\Annotation\\Injectable');
         } catch (UnexpectedValueException $e) {
             throw new InvalidAnnotation(\sprintf('Error while reading @Injectable on %s: %s', $class->getName(), $e->getMessage()), 0, $e);
         }

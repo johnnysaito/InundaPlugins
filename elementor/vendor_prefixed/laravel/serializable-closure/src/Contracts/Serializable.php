@@ -1,6 +1,6 @@
 <?php
 
-namespace ElementorProDeps\Laravel\SerializableClosure\Contracts;
+namespace ElementorDeps\Laravel\SerializableClosure\Contracts;
 
 interface Serializable
 {

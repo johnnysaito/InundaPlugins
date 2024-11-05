@@ -1,20 +1,20 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Resolver;
+namespace ElementorDeps\DI\Definition\Resolver;
 
-use ElementorProDeps\DI\Definition\Definition;
-use ElementorProDeps\DI\Definition\Exception\InvalidDefinition;
-use ElementorProDeps\DI\Definition\FactoryDefinition;
-use ElementorProDeps\DI\Invoker\FactoryParameterResolver;
-use ElementorProDeps\Invoker\Exception\NotCallableException;
-use ElementorProDeps\Invoker\Exception\NotEnoughParametersException;
-use ElementorProDeps\Invoker\Invoker;
-use ElementorProDeps\Invoker\ParameterResolver\AssociativeArrayResolver;
-use ElementorProDeps\Invoker\ParameterResolver\DefaultValueResolver;
-use ElementorProDeps\Invoker\ParameterResolver\NumericArrayResolver;
-use ElementorProDeps\Invoker\ParameterResolver\ResolverChain;
-use ElementorProDeps\Psr\Container\ContainerInterface;
+use ElementorDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Exception\InvalidDefinition;
+use ElementorDeps\DI\Definition\FactoryDefinition;
+use ElementorDeps\DI\Invoker\FactoryParameterResolver;
+use ElementorDeps\Invoker\Exception\NotCallableException;
+use ElementorDeps\Invoker\Exception\NotEnoughParametersException;
+use ElementorDeps\Invoker\Invoker;
+use ElementorDeps\Invoker\ParameterResolver\AssociativeArrayResolver;
+use ElementorDeps\Invoker\ParameterResolver\DefaultValueResolver;
+use ElementorDeps\Invoker\ParameterResolver\NumericArrayResolver;
+use ElementorDeps\Invoker\ParameterResolver\ResolverChain;
+use ElementorDeps\Psr\Container\ContainerInterface;
 /**
  * Resolves a factory definition to a value.
  *

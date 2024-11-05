@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Source;
+namespace ElementorDeps\DI\Definition\Source;
 
-use ElementorProDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Definition;
 /**
  * Reads DI definitions from a PHP array.
  *

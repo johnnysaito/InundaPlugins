@@ -1,17 +1,17 @@
 <?php
-namespace ElementorPro\Modules\ElementManager;
+namespace Elementor\Modules\ElementManager;
 
-use Elementor\Utils;
-use ElementorPro\Base\Module_Base;
-use ElementorPro\License\API;
+use Elementor\Core\Base\Module as BaseModule;
+use Elementor\Core\Admin\Menu\Admin_Menu_Manager;
+use Elementor\Widget_Base;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
-class Module extends Module_Base {
+class Module extends BaseModule {
 
-	const LICENSE_FEATURE_NAME = 'element-manager-permissions';
+	const PAGE_ID = 'elementor-element-manager';
 
 	public function get_name() {
 		return 'element-manager';
@@ -20,64 +20,76 @@ class Module extends Module_Base {
 	public function __construct() {
 		parent::__construct();
 
-		// TODO: Should we move this to the `is_active` method?
-		if ( ! API::is_licence_has_feature( static::LICENSE_FEATURE_NAME ) ) {
-			return;
-		}
+		$ajax = new Ajax();
+		$ajax->register_endpoints();
 
-		add_filter( 'elementor/document/config', function( $additional_config, $main_id ) {
-			$elements_restricted_roles = Options::get_role_restrictions();
-			$user = wp_get_current_user();
+		add_action( 'elementor/admin/menu/register', function( Admin_Menu_Manager $admin_menu ) {
+			$admin_menu->register( static::PAGE_ID, new Admin_Menu_App() );
+		}, 25 );
 
-			foreach ( $elements_restricted_roles as $element_name => $restricted_roles ) {
-				$compare_roles = array_intersect( $user->roles, $restricted_roles );
+		add_action( 'elementor/admin/menu/after_register', function ( Admin_Menu_Manager $admin_menu, array $hooks ) {
+			if ( ! empty( $hooks[ static::PAGE_ID ] ) ) {
+				add_action( "admin_print_scripts-{$hooks[ static::PAGE_ID ]}", [ $this, 'enqueue_assets' ] );
+				add_action( "admin_footer-{$hooks[ static::PAGE_ID ]}", [ $this, 'print_styles' ], 1000 );
+			}
+		}, 10, 2 );
 
-				if ( ! empty( $compare_roles ) ) {
-					$additional_config['widgets'][ $element_name ]['show_in_panel'] = false;
-				}
+		add_filter( 'elementor/widgets/is_widget_enabled', function( $should_register, Widget_Base $widget_instance ) {
+			return ! Options::is_element_disabled( $widget_instance->get_name() );
+		}, 10, 2 );
+
+		add_filter( 'elementor/system-info/usage/settings', function( $usage ) {
+			$disabled_elements = Options::get_disabled_elements();
+
+			if ( ! empty( $disabled_elements ) ) {
+				$usage['disabled_elements'] = implode( ', ', $disabled_elements );
 			}
 
-			return $additional_config;
-		}, 100, 2 );
-
-		add_action( 'elementor/element_manager/save_disabled_elements', function() {
-			$role_restrictions = Utils::get_super_global_value( $_POST, 'elements_restriction' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
-
-			if ( empty( $role_restrictions ) ) {
-				return;
-			}
-
-			$role_restrictions = json_decode( $role_restrictions, true );
-
-			if ( is_array( $role_restrictions ) ) {
-				Options::update_role_restrictions( $role_restrictions );
-			}
+			return $usage;
 		} );
 
-		add_filter( 'elementor/element_manager/admin_app_data/additional_data', function( $additional_data ) {
-			$additional_data['roles'] = $this->get_roles();
-			$additional_data['role_restrictions'] = Options::get_role_restrictions();
+		add_filter( 'elementor/tracker/send_tracking_data_params', function( $params ) {
+			$disabled_elements = Options::get_disabled_elements();
 
-			return $additional_data;
+			if ( ! empty( $disabled_elements ) ) {
+				$params['usages']['disabled_elements'] = $disabled_elements;
+			}
+
+			return $params;
 		} );
 	}
 
-	private function get_roles() : array {
-		$roles = [];
+	public function enqueue_assets() {
+		wp_enqueue_script(
+			'e-element-manager-app',
+			$this->get_js_assets_url( 'element-manager-admin' ),
+			[
+				'wp-element',
+				'wp-components',
+				'wp-dom-ready',
+				'wp-i18n',
+			],
+			ELEMENTOR_VERSION
+		);
 
-		foreach ( get_editable_roles() as $role => $details ) {
-			if ( 'administrator' === $role ) {
-				continue;
+		wp_localize_script( 'e-element-manager-app', 'eElementManagerConfig', [
+			'nonce' => wp_create_nonce( 'e-element-manager-app' ),
+			'ajaxurl' => admin_url( 'admin-ajax.php' ),
+		] );
+
+		wp_set_script_translations( 'e-element-manager-app', 'elementor' );
+
+		wp_enqueue_style( 'wp-components' );
+		wp_enqueue_style( 'wp-format-library' );
+	}
+
+	public function print_styles() {
+		?>
+		<style>
+			.components-button.is-secondary:disabled {
+				box-shadow: inset 0 0 0 1px #949494;
 			}
-
-			$name = translate_user_role( $details['name'] );
-
-			$roles[] = [
-				'id' => $role,
-				'name' => $name,
-			];
-		}
-
-		return $roles;
+		</style>
+		<?php
 	}
 }

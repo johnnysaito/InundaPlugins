@@ -1,11 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\Invoker;
+namespace ElementorDeps\Invoker;
 
-use ElementorProDeps\Invoker\Exception\InvocationException;
-use ElementorProDeps\Invoker\Exception\NotCallableException;
-use ElementorProDeps\Invoker\Exception\NotEnoughParametersException;
+use ElementorDeps\Invoker\Exception\InvocationException;
+use ElementorDeps\Invoker\Exception\NotCallableException;
+use ElementorDeps\Invoker\Exception\NotEnoughParametersException;
 /**
  * Invoke a callable.
  */

@@ -1,9 +1,9 @@
 <?php
 
-namespace ElementorProDeps\Laravel\SerializableClosure;
+namespace ElementorDeps\Laravel\SerializableClosure;
 
 use Closure;
-use ElementorProDeps\Laravel\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
+use ElementorDeps\Laravel\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
 class UnsignedSerializableClosure
 {
     /**

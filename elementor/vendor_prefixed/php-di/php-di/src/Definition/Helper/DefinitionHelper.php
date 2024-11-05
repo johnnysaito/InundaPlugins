@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI\Definition\Helper;
+namespace ElementorDeps\DI\Definition\Helper;
 
-use ElementorProDeps\DI\Definition\Definition;
+use ElementorDeps\DI\Definition\Definition;
 /**
  * Helps defining container entries.
  *

@@ -1,63 +1,61 @@
 <?php
 
-namespace ElementorPro\Modules\FloatingButtons\Documents;
+namespace Elementor\Modules\FloatingButtons\Documents;
 
+use Elementor\Core\Base\Document;
+use Elementor\Core\DocumentTypes\PageBase;
+use Elementor\Modules\FloatingButtons\Module;
 use Elementor\Modules\Library\Traits\Library as Library_Trait;
-use ElementorPro\Modules\FloatingButtons\Module as Floating_Buttons_Module;
+use Elementor\Modules\FloatingButtons\Module as Floating_Buttons_Module;
 use Elementor\Modules\PageTemplates\Module as Page_Templates_Module;
+use Elementor\Plugin;
 use Elementor\TemplateLibrary\Source_Local;
-use ElementorPro\Modules\ThemeBuilder\Documents\Archive;
-use ElementorPro\Modules\ThemeBuilder\Documents\Single;
-use ElementorPro\Modules\ThemeBuilder\Documents\Theme_Document;
+use Elementor\Utils as ElementorUtils;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-class Floating_Buttons extends Theme_Document {
-
-	const FLOATING_ELEMENTS_TYPE_META_KEY = '_elementor_floating_elements_type';
-
+class Floating_Buttons extends PageBase {
 	use Library_Trait;
-
-	public static function get_floating_element_type( $post_id ) {
-		$meta = get_post_meta( $post_id, static::FLOATING_ELEMENTS_TYPE_META_KEY, true );
-		return $meta ? $meta : 'floating-buttons';
-	}
 
 	public static function get_properties() {
 		$properties = parent::get_properties();
 
-		$properties['cpt'] = [ Floating_Buttons_Module::CPT_FLOATING_BUTTONS ];
 		$properties['support_kit'] = true;
 		$properties['support_site_editor'] = false;
-
+		$properties['cpt'] = [ Floating_Buttons_Module::CPT_FLOATING_BUTTONS ];
 		$properties['show_navigator'] = false;
 		$properties['allow_adding_widgets'] = false;
 		$properties['support_page_layout'] = false;
-		$properties['support_conditions'] = true;
-		$properties['condition_type'] = 'general';
-		$properties['library_close_title'] = esc_html__( 'Go To Dashboard', 'elementor-pro' );
-		$properties['publish_button_title'] = esc_html__( 'After publishing this widget, you will be able to set it as visible on the entire site in the Admin Table.', 'elementor-pro' );
+		$properties['library_close_title'] = esc_html__( 'Go To Dashboard', 'elementor' );
+		$properties['publish_button_title'] = esc_html__( 'After publishing this widget, you will be able to set it as visible on the entire site in the Admin Table.', 'elementor' );
 		$properties['allow_closing_remote_library'] = false;
-		$properties['location'] = 'floating_buttons';
 
 		return $properties;
 	}
 
-	public function get_edit_url() {
-		return add_query_arg(
-			[
-				'post' => $this->get_main_id(),
-				'action' => 'elementor',
-				'floating_element' => get_post_meta(
-					$this->get_main_id(),
-					static::FLOATING_ELEMENTS_TYPE_META_KEY,
-					true
-				),
-			],
-			admin_url( 'post.php' )
-		);
+	public static function get_floating_element_type( $post_id ) {
+		$meta = get_post_meta( $post_id, Floating_Buttons_Module::FLOATING_ELEMENTS_TYPE_META_KEY, true );
+		return $meta ? $meta : 'floating-buttons';
+	}
+
+	public static function is_editing_existing_floating_buttons_page() {
+		$action = ElementorUtils::get_super_global_value( $_GET, 'action' );
+		$post_id = ElementorUtils::get_super_global_value( $_GET, 'post' );
+
+		return 'elementor' === $action && static::is_floating_buttons_type_meta_key( $post_id );
+	}
+
+	public static function is_creating_floating_buttons_page() {
+		$action = ElementorUtils::get_super_global_value( $_POST, 'action' ); //phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$post_id = ElementorUtils::get_super_global_value( $_POST, 'editor_post_id' ); //phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		return 'elementor_ajax' === $action && static::is_floating_buttons_type_meta_key( $post_id );
+	}
+
+	public static function is_floating_buttons_type_meta_key( $post_id ) {
+		return Module::FLOATING_BUTTONS_DOCUMENT_TYPE === get_post_meta( $post_id, Document::TYPE_META_KEY, true );
 	}
 
 	public function print_content() {
@@ -84,20 +82,6 @@ class Floating_Buttons extends Theme_Document {
 
 	public static function register_hide_title_control( $document ) {}
 
-	public static function get_preview_as_default() {
-		return '';
-	}
-
-	public static function get_preview_as_options() {
-		return array_merge(
-			[
-				'' => esc_html__( 'Select...', 'elementor-pro' ),
-			],
-			Archive::get_preview_as_options(),
-			Single::get_preview_as_options()
-		);
-	}
-
 	public function get_name() {
 		return Floating_Buttons_Module::FLOATING_BUTTONS_DOCUMENT_TYPE;
 	}
@@ -105,7 +89,7 @@ class Floating_Buttons extends Theme_Document {
 	public function filter_admin_row_actions( $actions ) {
 		unset( $actions['edit'] );
 		unset( $actions['inline hide-if-no-js'] );
-		$built_with_elementor = $this->add_built_with_elementor( [] );
+		$built_with_elementor = parent::filter_admin_row_actions( [] );
 
 		if ( isset( $actions['trash'] ) ) {
 			$delete = $actions['trash'];
@@ -113,21 +97,102 @@ class Floating_Buttons extends Theme_Document {
 			$actions['trash'] = $delete;
 		}
 
+		if ( 'publish' === $this->get_post()->post_status ) {
+			$actions = $this->set_as_entire_site( $actions );
+		}
+
 		return $built_with_elementor + $actions;
 	}
 
-	public function add_built_with_elementor( $actions ) {
-		if ( $this->is_built_with_elementor() && $this->is_editable_by_current_user() ) {
-			$edit_url = $this->get_edit_url();
+	public static function get_meta_query_for_floating_buttons( string $floating_element_type ): array {
+		$meta_query = [
+			'relation' => 'AND',
+			[
+				'key' => '_elementor_conditions',
+				'compare' => 'EXISTS',
+			],
+		];
 
-			if ( ! $this->get_post()->post_content ) {
-				$edit_url .= '#library';
+		if ( 'floating-buttons' === $floating_element_type ) {
+			$meta_query[] = [
+				'relation' => 'OR',
+				[
+					'key' => Module::FLOATING_ELEMENTS_TYPE_META_KEY,
+					'compare' => 'NOT EXISTS',
+				],
+				[
+					'key' => Module::FLOATING_ELEMENTS_TYPE_META_KEY,
+					'value' => 'floating-buttons',
+				],
+			];
+		} else {
+			$meta_query[] = [
+				'key' => Module::FLOATING_ELEMENTS_TYPE_META_KEY,
+				'value' => $floating_element_type,
+			];
+		}
+
+		return $meta_query;
+	}
+
+	/**
+	 * Tries to find the post id of the floating element that is set as entire site.
+	 * If found, returns the post id, otherwise returns 0.
+	 *
+	 * @param string $floating_element_type
+	 *
+	 * @return int
+	 */
+	public static function get_set_as_entire_site_post_id( string $floating_element_type ): int {
+		static $types = [];
+
+		if ( isset( $types[ $floating_element_type ] ) ) {
+			return $types[ $floating_element_type ];
+		}
+
+		$query = new \WP_Query( [
+			'post_type' => Floating_Buttons_Module::CPT_FLOATING_BUTTONS,
+			'posts_per_page' => -1,
+			'post_status' => 'publish',
+			'fields' => 'ids',
+			'no_found_rows' => true,
+			'update_post_term_cache' => false,
+			'meta_query' => static::get_meta_query_for_floating_buttons( $floating_element_type ),
+		] );
+
+		foreach ( $query->get_posts() as $post_id ) {
+			$conditions = get_post_meta( $post_id, '_elementor_conditions', true );
+
+			if ( ! $conditions ) {
+				continue;
 			}
 
-			$actions['edit_with_elementor'] = sprintf(
-				'<a href="%1$s">%2$s</a>',
-				$edit_url,
-				__( 'Edit with Elementor', 'elementor-pro' )
+			if ( in_array( 'include/general', $conditions ) ) {
+				$types[ $floating_element_type ] = $post_id;
+				return $post_id;
+			}
+		}
+
+		return 0;
+	}
+
+	public function set_as_entire_site( $actions ) {
+		$floating_element_type = static::get_floating_element_type( $this->get_main_id() );
+		$current_set_as_entire_site_post_id = static::get_set_as_entire_site_post_id( $floating_element_type );
+
+		if ( $current_set_as_entire_site_post_id === $this->get_main_id() ) {
+			$actions['set_as_entire_site'] = sprintf(
+				'<a style="color:red;" href="?post=%s&action=remove_from_entire_site&_wpnonce=%s">%s</a>',
+				$this->get_post()->ID,
+				wp_create_nonce( 'remove_from_entire_site_' . $this->get_post()->ID ),
+				esc_html__( 'Remove From Entire Site', 'elementor' )
+			);
+		} else {
+			$actions['set_as_entire_site'] = sprintf(
+				'<a href="?post=%s&action=set_as_entire_site&_wpnonce=%s">%s</a>',
+				$this->get_post()->ID,
+				wp_create_nonce( 'set_as_entire_site_' . $this->get_post()->ID ),
+				esc_html__( 'Set as Entire Site', 'elementor' )
 			);
 		}
 
@@ -135,15 +200,15 @@ class Floating_Buttons extends Theme_Document {
 	}
 
 	public static function get_title() {
-		return esc_html__( 'Floating Element', 'elementor-pro' );
+		return esc_html__( 'Floating Element', 'elementor' );
 	}
 
 	public static function get_plural_title() {
-		return esc_html__( 'Floating Elements', 'elementor-pro' );
+		return esc_html__( 'Floating Elements', 'elementor' );
 	}
 
 	public static function get_create_url() {
-		return parent::get_create_url();
+		return parent::get_create_url() . '#library';
 	}
 
 	public function save( $data ) {
@@ -154,37 +219,27 @@ class Floating_Buttons extends Theme_Document {
 		return parent::save( $data );
 	}
 
-	protected function register_controls() {
-		parent::register_controls();
-
-		$latest_posts = get_posts( [
-			'posts_per_page' => 1,
-			'post_type' => 'page',
-		] );
-
-		if ( ! empty( $latest_posts ) ) {
-			$this->update_control(
-				'preview_type',
-				[
-					'default' => 'single/page',
-				]
-			);
-
-			$this->update_control(
-				'preview_id',
-				[
-					'default' => $latest_posts[0]->ID,
-				]
-			);
-		}
-	}
-
 	public function admin_columns_content( $column_name ) {
 		if ( 'elementor_library_type' === $column_name ) {
 			$admin_filter_url = admin_url( Source_Local::ADMIN_MENU_SLUG . '&elementor_library_type=' . $this->get_name() );
 			$meta = static::get_floating_element_type( $this->get_main_id() );
-			printf( '<a href="%s">%s</a>', $admin_filter_url, Floating_Buttons_Module::get_floating_elements_types()[ $meta ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			printf( '<a href="%s">%s</a>', $admin_filter_url, Module::get_floating_elements_types()[ $meta ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
+	}
+
+	public function get_edit_url() {
+		return add_query_arg(
+			[
+				'post' => $this->get_main_id(),
+				'action' => 'elementor',
+				'floating_element' => get_post_meta(
+					$this->get_main_id(),
+					Module::FLOATING_ELEMENTS_TYPE_META_KEY,
+					true
+				),
+			],
+			admin_url( 'post.php' )
+		);
 	}
 
 	protected function get_remote_library_config() {

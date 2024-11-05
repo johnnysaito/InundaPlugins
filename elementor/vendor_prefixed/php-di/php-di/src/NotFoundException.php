@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace ElementorProDeps\DI;
+namespace ElementorDeps\DI;
 
-use ElementorProDeps\Psr\Container\NotFoundExceptionInterface;
+use ElementorDeps\Psr\Container\NotFoundExceptionInterface;
 /**
  * Exception thrown when a class or a value is not found in the container.
  */

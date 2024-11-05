@@ -1,10 +1,10 @@
 <?php
 
-namespace ElementorProDeps\Laravel\SerializableClosure\Serializers;
+namespace ElementorDeps\Laravel\SerializableClosure\Serializers;
 
-use ElementorProDeps\Laravel\SerializableClosure\Contracts\Serializable;
-use ElementorProDeps\Laravel\SerializableClosure\Exceptions\InvalidSignatureException;
-use ElementorProDeps\Laravel\SerializableClosure\Exceptions\MissingSecretKeyException;
+use ElementorDeps\Laravel\SerializableClosure\Contracts\Serializable;
+use ElementorDeps\Laravel\SerializableClosure\Exceptions\InvalidSignatureException;
+use ElementorDeps\Laravel\SerializableClosure\Exceptions\MissingSecretKeyException;
 class Signed implements Serializable
 {
     /**
